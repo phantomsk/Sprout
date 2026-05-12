@@ -471,53 +471,64 @@ function BucketRow({ color, label, pct, cap }) {
 function BudgetTab({ user, setUser }) {
   const [view, setView] = useState("budget");
 
+  const toggleButton = (v, visible = true) => (
+    <button
+      key={v}
+      onClick={visible ? () => setView(v) : undefined}
+      tabIndex={visible ? 0 : -1}
+      aria-hidden={!visible}
+      style={{
+        padding: "6px 10px",
+        border: "none",
+        cursor: visible ? "pointer" : "default",
+        fontSize: 10,
+        fontWeight: 700,
+        fontFamily: "inherit",
+        letterSpacing: 0.4,
+        borderRadius: 7,
+        background: view === v ? "var(--c-dark)" : "transparent",
+        color: view === v ? "var(--c-bg)" : "var(--c-dark)",
+        transition: "background 0.15s, color 0.15s",
+      }}
+    >
+      {v.toUpperCase()}
+    </button>
+  );
+
+  const toggleWrap = (visible) => (
+    <div
+      className="row"
+      aria-hidden={!visible}
+      style={{
+        gap: 3,
+        padding: 3,
+        background: visible ? "rgba(45, 80, 22, 0.08)" : "transparent",
+        border: visible
+          ? "1px solid rgba(45, 80, 22, 0.12)"
+          : "1px solid transparent",
+        borderRadius: 10,
+        visibility: visible ? "visible" : "hidden",
+        pointerEvents: visible ? "auto" : "none",
+        flexShrink: 0,
+      }}
+    >
+      {["budget", "income"].map((v) => toggleButton(v, visible))}
+    </div>
+  );
+
   return (
     <div className="screen-enter pad stack">
       <div
         style={{
-          position: "relative",
           display: "flex",
-          justifyContent: "center",
           alignItems: "center",
+          justifyContent: "space-between",
+          gap: 4,
         }}
       >
+        {toggleWrap(false)}
         <PageTitle src="/animations/budget.png" alt="Budget" />
-        <div
-          className="row"
-          style={{
-            position: "absolute",
-            right: 0,
-            top: "50%",
-            transform: "translateY(-50%)",
-            gap: 3,
-            padding: 3,
-            background: "rgba(45, 80, 22, 0.08)",
-            border: "1px solid rgba(45, 80, 22, 0.12)",
-            borderRadius: 10,
-          }}
-        >
-          {["budget", "income"].map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              style={{
-                padding: "7px 14px",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 10,
-                fontWeight: 700,
-                fontFamily: "inherit",
-                letterSpacing: 0.4,
-                borderRadius: 7,
-                background: view === v ? "var(--c-dark)" : "transparent",
-                color: view === v ? "var(--c-bg)" : "var(--c-dark)",
-                transition: "background 0.15s, color 0.15s",
-              }}
-            >
-              {v.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        {toggleWrap(true)}
       </div>
 
       {view === "budget" && <BudgetView user={user} setUser={setUser} />}
