@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SourceRow, newSource, toMonthly } from "./IncomeSource";
 import {
   PixelSprite,
@@ -1426,11 +1426,218 @@ const PICK_INFO = {
   },
 };
 
+function Sparkline({ bars, positive, fullWidth }) {
+  if (!bars || bars.length < 2) return null;
+  const W = fullWidth ? 300 : 80;
+  const H = fullWidth ? 32 : 24;
+  const min = Math.min(...bars);
+  const max = Math.max(...bars);
+  const range = max - min || 1;
+  const pts = bars
+    .map((v, i) => {
+      const x = (i / (bars.length - 1)) * W;
+      const y = H - ((v - min) / range) * (H - 4) - 2;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  const color = positive === null ? "#aaa" : positive ? "#3a7d44" : "#c0392b";
+  const fillColor = positive === null ? "rgba(170,170,170,0.08)" : positive ? "rgba(58,125,68,0.08)" : "rgba(192,57,43,0.08)";
+  const lastPt = bars[bars.length - 1];
+  const lastX = W;
+  const lastY = H - ((lastPt - min) / range) * (H - 4) - 2;
+  const fillPath = `M${pts.split(" ").map((p, i) => (i === 0 ? p : p)).join(" L")} L${lastX},${H} L0,${H} Z`;
+
+  return (
+    <svg
+      width={fullWidth ? "100%" : W}
+      height={H}
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio={fullWidth ? "none" : undefined}
+      style={{ display: "block", overflow: "visible" }}
+      aria-hidden="true"
+    >
+      {fullWidth && (
+        <path d={fillPath} fill={fillColor} stroke="none" />
+      )}
+      <polyline
+        points={pts}
+        fill="none"
+        stroke={color}
+        strokeWidth={fullWidth ? "2" : "1.8"}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.9"
+      />
+      {fullWidth && (
+        <circle cx={lastX} cy={lastY} r="3" fill={color} opacity="0.9" />
+      )}
+    </svg>
+  );
+}
+
+function MarketBadge({ marketOpen, lastUpdated, loading, error }) {
+  const timeStr = lastUpdated
+    ? new Date(lastUpdated).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "America/New_York",
+      }) + " ET"
+    : null;
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 6, height: 20 }}>
+        <span style={{
+          width: 60, height: 10, borderRadius: 4,
+          background: "linear-gradient(90deg, var(--c-mid-light) 25%, var(--c-bg) 50%, var(--c-mid-light) 75%)",
+          backgroundSize: "200% 100%",
+          animation: "shimmer 1.4s infinite",
+          display: "inline-block",
+        }} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <span className="tiny" style={{ color: "#c0392b" }}>
+        ⚠ prices unavailable
+      </span>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <span style={{
+        width: 7,
+        height: 7,
+        borderRadius: "50%",
+        background: marketOpen ? "#3a7d44" : "#aaa",
+        display: "inline-block",
+        animation: marketOpen ? "pulse-dot 2s ease-in-out infinite" : "none",
+        flexShrink: 0,
+      }} />
+      <span className="tiny" style={{ color: "var(--c-dark)", fontWeight: 600 }}>
+        {marketOpen ? "MARKET OPEN" : "MARKET CLOSED"}
+      </span>
+      <span className="tiny" style={{ color: "var(--c-mid)" }}>
+        · 15-min delay{timeStr ? ` · ${timeStr}` : ""}
+      </span>
+    </div>
+  );
+}
+
+const WINDOW_LABELS = { "1D": "today", "1W": "7D", "1M": "1M", "3M": "3M" };
+
+function StockPriceBadge({ sym, stockData, loadingStocks, timeWindow }) {
+  if (loadingStocks) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {[44, 58].map((w, i) => (
+          <span key={i} style={{
+            width: w, height: 10, borderRadius: 4,
+            background: "var(--c-mid-light)",
+            animation: "shimmer 1.4s infinite",
+            display: "inline-block",
+          }} />
+        ))}
+      </div>
+    );
+  }
+
+  const d = stockData?.[sym];
+  if (!d || d.price === null) return null;
+
+  const pct = d.changePercent;
+  const pillBg = pct === null ? "#f0f0f0" : pct >= 0 ? "#d4edda" : "#f8d7da";
+  const pillColor = pct === null ? "#666" : pct >= 0 ? "#155724" : "#721c24";
+  const arrow = pct === null ? "→" : pct >= 0 ? "▲" : "▼";
+  const label = WINDOW_LABELS[timeWindow] ?? "7D";
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+      <span style={{ fontSize: 15, fontWeight: 700, color: "var(--c-darkest)", letterSpacing: 0.2 }}>
+        ${d.price.toFixed(2)}
+      </span>
+      {pct !== null && (
+        <span style={{
+          fontSize: 11,
+          fontWeight: 700,
+          padding: "2px 7px",
+          borderRadius: 99,
+          background: pillBg,
+          color: pillColor,
+          letterSpacing: 0.3,
+          whiteSpace: "nowrap",
+        }}>
+          {arrow} {Math.abs(pct).toFixed(2)}% {label}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function StockSparklineRow({ sym, stockData, loadingStocks }) {
+  if (loadingStocks) {
+    return (
+      <div style={{ marginTop: 10 }}>
+        <span style={{
+          display: "block", width: "100%", height: 24, borderRadius: 4,
+          background: "var(--c-mid-light)",
+          animation: "shimmer 1.4s infinite",
+        }} />
+      </div>
+    );
+  }
+
+  const d = stockData?.[sym];
+  if (!d || !d.bars || d.bars.length < 2) return null;
+
+  const pct = d.changePercent;
+  const positive = pct === null ? null : pct >= 0;
+
+  return (
+    <div style={{ marginTop: 10, width: "100%" }}>
+      <Sparkline bars={d.bars} positive={positive} fullWidth />
+    </div>
+  );
+}
+
 function InvestTab({ user, setUser, setTab }) {
   const [confirm, setConfirm] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showBook, setShowBook] = useState(false);
   const [openPick, setOpenPick] = useState(null);
+  const [stockData, setStockData] = useState({});
+  const [loadingStocks, setLoadingStocks] = useState(true);
+  const [stockError, setStockError] = useState(null);
+  const [marketOpen, setMarketOpen] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [timeWindow, setTimeWindow] = useState("1W");
+
+  const fetchStocks = async (win) => {
+    try {
+      const res = await fetch(`/api/stocks?window=${win}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+      setStockData(data.stocks || {});
+      setMarketOpen(data.marketOpen ?? false);
+      setLastUpdated(data.lastUpdated ?? null);
+      setStockError(null);
+    } catch (err) {
+      setStockError(err.message || "Failed to load prices");
+    } finally {
+      setLoadingStocks(false);
+    }
+  };
+
+  useEffect(() => {
+    setLoadingStocks(true);
+    setStockData({});
+    fetchStocks(timeWindow);
+    const id = setInterval(() => fetchStocks(timeWindow), 60_000);
+    return () => clearInterval(id);
+  }, [timeWindow]);
 
   const picks =
     {
@@ -1490,6 +1697,37 @@ function InvestTab({ user, setUser, setTab }) {
             </p>
           </div>
           <PixelSprite pixels={SPROUT_PIXELS.bud} scale={4} />
+        </div>
+      </div>
+
+      <div style={{ marginTop: 12, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <MarketBadge
+          marketOpen={marketOpen}
+          lastUpdated={lastUpdated}
+          loading={loadingStocks}
+          error={stockError}
+        />
+        <div style={{ display: "flex", gap: 4 }}>
+          {["1D", "1W", "1M", "3M"].map((w) => (
+            <button
+              key={w}
+              onClick={() => setTimeWindow(w)}
+              style={{
+                padding: "3px 9px",
+                borderRadius: 99,
+                border: timeWindow === w ? "none" : "1px solid rgba(45,80,22,0.18)",
+                background: timeWindow === w ? "var(--c-mid)" : "transparent",
+                color: timeWindow === w ? "var(--c-bg)" : "var(--c-dark)",
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer",
+                letterSpacing: 0.4,
+                transition: "background 0.12s, color 0.12s",
+              }}
+            >
+              {w}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -1555,66 +1793,48 @@ function InvestTab({ user, setUser, setTab }) {
               role="button"
               aria-expanded={isOpen}
             >
-              <div
-                className="row between"
-                style={{ alignItems: "flex-start", gap: 12 }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    className="row"
-                    style={{
-                      gap: 6,
-                      alignItems: "center",
-                      marginBottom: 6,
-                      flexWrap: "wrap",
-                    }}
+              {/* Header: ticker + type chip on left, live price + change on right */}
+              <div className="row between" style={{ alignItems: "center", marginBottom: 8 }}>
+                <div className="row" style={{ gap: 6, alignItems: "center" }}>
+                  <p
+                    className="pixel"
+                    style={{ fontSize: 18, letterSpacing: 0.5, color: "var(--c-darkest)" }}
                   >
-                    <p
-                      className="pixel"
+                    {p.sym}
+                  </p>
+                  {info.type && (
+                    <span
+                      className="chip"
                       style={{
-                        fontSize: 18,
-                        letterSpacing: 0.5,
-                        color: "var(--c-darkest)",
+                        background: "var(--c-mid-light)",
+                        color: "var(--c-dark)",
+                        border: "1px solid rgba(45, 80, 22, 0.12)",
                       }}
                     >
-                      {p.sym}
-                    </p>
-                    {info.type && (
-                      <span
-                        className="chip"
-                        style={{
-                          background: "var(--c-mid-light)",
-                          color: "var(--c-dark)",
-                          border: "1px solid rgba(45, 80, 22, 0.12)",
-                        }}
-                      >
-                        {info.type.toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <p
-                    className="body"
-                    style={{
-                      color: "var(--c-dark)",
-                      fontWeight: 600,
-                      marginBottom: 8,
-                    }}
-                  >
-                    {p.name}
-                  </p>
-                  <p className="body">{p.why}</p>
+                      {info.type.toUpperCase()}
+                    </span>
+                  )}
                 </div>
-                <button
-                  className="btn small"
-                  style={{ flexShrink: 0 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConfirm(p);
-                  }}
-                >
-                  + PLANT
-                </button>
+                <StockPriceBadge
+                  sym={p.sym}
+                  stockData={stockData}
+                  loadingStocks={loadingStocks}
+                  timeWindow={timeWindow}
+                />
               </div>
+
+              {/* Name and tagline */}
+              <p className="body" style={{ color: "var(--c-dark)", fontWeight: 600, marginBottom: 4 }}>
+                {p.name}
+              </p>
+              <p className="body">{p.why}</p>
+
+              {/* Full-width 7-day sparkline */}
+              <StockSparklineRow
+                sym={p.sym}
+                stockData={stockData}
+                loadingStocks={loadingStocks}
+              />
 
               {isOpen && info.more && (
                 <div
@@ -1636,41 +1856,46 @@ function InvestTab({ user, setUser, setTab }) {
                 </div>
               )}
 
+              {/* Footer: expand toggle on left, plant button on right */}
               <div
-                className="row"
-                style={{
-                  marginTop: 14,
-                  alignItems: "center",
-                  gap: 8,
-                  justifyContent: "flex-end",
-                }}
+                className="row between"
+                style={{ marginTop: 14, alignItems: "center" }}
               >
-                <span
-                  className="tiny pixel"
-                  style={{ color: "var(--c-dark)" }}
-                >
-                  {isOpen ? "LESS" : "MORE INFO"}
-                </span>
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 999,
-                    background: "var(--c-mid-light)",
-                    color: "var(--c-dark)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 18,
-                    fontWeight: 700,
-                    lineHeight: 1,
-                    transition: "transform 0.15s ease",
-                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                  <span className="tiny pixel" style={{ color: "var(--c-dark)" }}>
+                    {isOpen ? "LESS" : "MORE INFO"}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 999,
+                      background: "var(--c-mid-light)",
+                      color: "var(--c-dark)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 18,
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      transition: "transform 0.15s ease",
+                      transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    }}
+                  >
+                    ▾
+                  </span>
+                </div>
+                <button
+                  className="btn small"
+                  style={{ flexShrink: 0 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirm(p);
                   }}
                 >
-                  ▾
-                </span>
+                  + PLANT
+                </button>
               </div>
             </div>
           );

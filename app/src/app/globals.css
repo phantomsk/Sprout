@@ -868,6 +868,11 @@ input[type="range"].pix::-moz-range-thumb {
   animation: shimmer 1s steps(2, end) infinite;
 }
 
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.35); }
+}
+
 @keyframes fadein {
   from {
     opacity: 0;
