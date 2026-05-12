@@ -1,4 +1,25 @@
+import { Inter, Press_Start_2P, Nunito } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+const pressStart = Press_Start_2P({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-pixel",
+  display: "swap",
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: ["500", "700", "800"],
+  variable: "--font-soft",
+  display: "swap",
+});
 
 export const metadata = {
   title: "Sprout",
@@ -14,19 +35,10 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Nunito:wght@500;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="en"
+      className={`${inter.variable} ${pressStart.variable} ${nunito.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

@@ -20,6 +20,24 @@ export function SproutApp() {
     mood: null,
   });
 
+  // On first mount, check if a Supabase session exists — if so, skip auth.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getSupabaseBrowser } = await import("@/lib/supabase/client");
+        const supabase = getSupabaseBrowser();
+        const { data } = await supabase.auth.getSession();
+        if (!cancelled && data.session) setRoute("app");
+      } catch {
+        // No Supabase configured yet — stay on intro.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     if (route === "app" && user.plants.length === 0) {
       setUser((u) => ({
@@ -30,6 +48,17 @@ export function SproutApp() {
       }));
     }
   }, [route, user.plants.length]);
+
+  const onSignOut = async () => {
+    try {
+      const { getSupabaseBrowser } = await import("@/lib/supabase/client");
+      const supabase = getSupabaseBrowser();
+      await supabase.auth.signOut();
+    } catch {
+      // ignore
+    }
+    setRoute("auth");
+  };
 
   let body;
   if (route === "intro")
@@ -51,7 +80,13 @@ export function SproutApp() {
     );
   else if (route === "app")
     body = (
-      <MainApp tab={tab} setTab={setTab} user={user} setUser={setUser} />
+      <MainApp
+        tab={tab}
+        setTab={setTab}
+        user={user}
+        setUser={setUser}
+        onSignOut={onSignOut}
+      />
     );
 
   return body;
@@ -168,8 +203,64 @@ function Intro({ onNext }) {
 
 function Auth({ onLogin, onSignup }) {
   const [mode, setMode] = useState("signup");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [info, setInfo] = useState(null);
+
+  const submit = async (e) => {
+    e?.preventDefault?.();
+    setError(null);
+    setInfo(null);
+    if (!email.trim() || !password) {
+      setError("Email and password are required.");
+      return;
+    }
+    if (mode === "signup" && password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { getSupabaseBrowser } = await import("@/lib/supabase/client");
+      const supabase = getSupabaseBrowser();
+
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+        });
+        if (error) throw error;
+        // If email confirmation is enabled in Supabase, no session yet.
+        if (!data.session) {
+          setInfo("Check your email to confirm, then come back to log in.");
+          setMode("login");
+          return;
+        }
+        onSignup();
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        if (error) throw error;
+        onLogin();
+      }
+    } catch (err) {
+      setError(err?.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const oauthTodo = () =>
+    setError(
+      "Google / Apple sign-in isn't wired up yet — use email + password for now."
+    );
+
   return (
-    <div className="screen screen-enter pad stack">
+    <div className="screen screen-enter pad stack narrow">
       <div className="center" style={{ marginTop: 8 }}>
         <PixelSprite pixels={SPROUT_PIXELS.sprout} scale={7} />
         <h1 className="pixel" style={{ marginTop: 8 }}>
@@ -179,65 +270,118 @@ function Auth({ onLogin, onSignup }) {
 
       <div
         className="row"
-        style={{ gap: 0, border: "4px solid var(--c-darkest)" }}
+        style={{
+          gap: 4,
+          padding: 4,
+          background: "rgba(45, 80, 22, 0.08)",
+          border: "1px solid rgba(45, 80, 22, 0.12)",
+          borderRadius: 12,
+        }}
       >
         <button
-          className="pixel"
-          onClick={() => setMode("signup")}
+          onClick={() => {
+            setMode("signup");
+            setError(null);
+            setInfo(null);
+          }}
           style={{
             flex: 1,
-            padding: 10,
+            padding: "10px 12px",
             border: "none",
             cursor: "pointer",
-            fontSize: 9,
-            letterSpacing: 1,
-            background:
-              mode === "signup" ? "var(--c-dark)" : "var(--c-cream)",
-            color: mode === "signup" ? "var(--c-bg)" : "var(--c-darkest)",
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: 0.3,
+            borderRadius: 8,
+            background: mode === "signup" ? "var(--c-dark)" : "transparent",
+            color: mode === "signup" ? "var(--c-bg)" : "var(--c-dark)",
+            transition: "background 0.15s, color 0.15s",
           }}
         >
           SIGN UP
         </button>
         <button
-          className="pixel"
-          onClick={() => setMode("login")}
+          onClick={() => {
+            setMode("login");
+            setError(null);
+            setInfo(null);
+          }}
           style={{
             flex: 1,
-            padding: 10,
+            padding: "10px 12px",
             border: "none",
             cursor: "pointer",
-            fontSize: 9,
-            letterSpacing: 1,
-            background:
-              mode === "login" ? "var(--c-dark)" : "var(--c-cream)",
-            color: mode === "login" ? "var(--c-bg)" : "var(--c-darkest)",
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: 0.3,
+            borderRadius: 8,
+            background: mode === "login" ? "var(--c-dark)" : "transparent",
+            color: mode === "login" ? "var(--c-bg)" : "var(--c-dark)",
+            transition: "background 0.15s, color 0.15s",
           }}
         >
           LOG IN
         </button>
       </div>
 
-      <div className="stack">
+      <form onSubmit={submit} className="stack" noValidate>
         <div>
           <label className="input-label">EMAIL</label>
-          <input className="input" defaultValue="player1@sprout.fun" />
+          <input
+            className="input"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
         <div>
           <label className="input-label">PASSWORD</label>
           <input
             className="input"
             type="password"
-            defaultValue="••••••••"
+            autoComplete={
+              mode === "signup" ? "new-password" : "current-password"
+            }
+            placeholder="At least 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
         </div>
 
-        <button
-          className="btn full"
-          onClick={mode === "signup" ? onSignup : onLogin}
-        >
-          {mode === "signup" ? "START GROWING ▸" : "ENTER GARDEN ▸"}
+        {error && (
+          <div
+            className="card"
+            style={{
+              background: "var(--c-danger)",
+              borderColor: "transparent",
+              padding: 10,
+            }}
+          >
+            <p className="body" style={{ color: "var(--c-cream)" }}>
+              ♦ {error}
+            </p>
+          </div>
+        )}
+        {info && (
+          <div
+            className="card"
+            style={{ background: "var(--c-mid-light)", padding: 10 }}
+          >
+            <p className="body">★ {info}</p>
+          </div>
+        )}
+
+        <button className="btn full" type="submit" disabled={busy}>
+          {busy
+            ? "WORKING…"
+            : mode === "signup"
+              ? "START GROWING ▸"
+              : "ENTER GARDEN ▸"}
         </button>
-      </div>
+      </form>
 
       <div className="row" style={{ gap: 8 }}>
         <div
@@ -261,13 +405,15 @@ function Auth({ onLogin, onSignup }) {
 
       <button
         className="btn full secondary"
-        onClick={mode === "signup" ? onSignup : onLogin}
+        onClick={oauthTodo}
+        type="button"
       >
         ▣ CONTINUE WITH GOOGLE
       </button>
       <button
         className="btn full secondary"
-        onClick={mode === "signup" ? onSignup : onLogin}
+        onClick={oauthTodo}
+        type="button"
       >
          CONTINUE WITH APPLE
       </button>

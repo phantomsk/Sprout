@@ -12,68 +12,87 @@ export function Onboarding({ user, setUser, onDone }) {
   const finish = () => onDone();
 
   return (
-    <div className="screen screen-enter" style={{ background: "var(--c-bg)" }}>
-      <div className="pad-h pad-v" style={{ paddingBottom: 0 }}>
-        <div className="row" style={{ gap: 4 }}>
+    <div
+      className="screen screen-enter"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div
+        className="pad-h pad-v"
+        style={{ paddingBottom: 0, flexShrink: 0 }}
+      >
+        <div className="row" style={{ gap: 6 }}>
           {steps.map((_, i) => (
             <div
               key={i}
               style={{
                 flex: 1,
-                height: 8,
+                height: 6,
                 background:
-                  i <= step ? "var(--c-mid)" : "var(--c-cream-shadow)",
-                border: "2px solid var(--c-darkest)",
+                  i <= step ? "var(--c-mid)" : "rgba(45, 80, 22, 0.12)",
+                borderRadius: 999,
+                transition: "background 0.2s",
               }}
             />
           ))}
         </div>
         <p
-          className="tiny pixel"
-          style={{ marginTop: 8, color: "var(--c-dark)" }}
+          className="tiny pixel center"
+          style={{ marginTop: 10, color: "var(--c-dark)" }}
         >
           STEP {step + 1} OF {steps.length}
         </p>
       </div>
 
-      {cur === "welcome" && <Welcome onNext={next} />}
-      {cur === "snapshot" && (
-        <Snapshot user={user} setUser={setUser} onNext={next} onBack={back} />
-      )}
-      {cur === "risk" && (
-        <RiskQuiz user={user} setUser={setUser} onNext={next} onBack={back} />
-      )}
-      {cur === "budget" && (
-        <BudgetSetup
-          user={user}
-          setUser={setUser}
-          onNext={next}
-          onBack={back}
-        />
-      )}
-      {cur === "accounts" && (
-        <ConnectAccounts onNext={next} onBack={back} />
-      )}
-      {cur === "meet" && (
-        <MeetPlant
-          user={user}
-          setUser={setUser}
-          onNext={finish}
-          onBack={back}
-        />
-      )}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+        }}
+      >
+        {cur === "welcome" && <Welcome onNext={next} />}
+        {cur === "snapshot" && (
+          <Snapshot user={user} setUser={setUser} onNext={next} onBack={back} />
+        )}
+        {cur === "risk" && (
+          <RiskQuiz user={user} setUser={setUser} onNext={next} onBack={back} />
+        )}
+        {cur === "budget" && (
+          <BudgetSetup
+            user={user}
+            setUser={setUser}
+            onNext={next}
+            onBack={back}
+          />
+        )}
+        {cur === "accounts" && (
+          <ConnectAccounts onNext={next} onBack={back} />
+        )}
+        {cur === "meet" && (
+          <MeetPlant
+            user={user}
+            setUser={setUser}
+            onNext={finish}
+            onBack={back}
+          />
+        )}
+      </div>
     </div>
   );
 }
 
 function Welcome({ onNext }) {
   return (
-    <div className="pad stack" style={{ paddingTop: 32 }}>
+    <div className="pad stack">
       <div className="center">
         <PixelSprite pixels={SPROUT_PIXELS.seed} scale={8} />
       </div>
       <h1 className="pixel center">DEEP BREATH.</h1>
-      <p className="body center" style={{ fontSize: 22 }}>
+      <p className="body center" style={{ fontSize: 16, lineHeight: 1.5 }}>
         We&apos;ll ask a few gentle questions to set up your garden. Skip
         anything you&apos;re not sure about — you can fill it in later.
       </p>
@@ -102,8 +121,8 @@ function Snapshot({ user, setUser, onNext, onBack }) {
   };
   return (
     <div className="pad stack">
-      <h2 className="pixel">FINANCIAL SNAPSHOT</h2>
-      <p className="body" style={{ fontSize: 20 }}>
+      <h2 className="pixel center">FINANCIAL SNAPSHOT</h2>
+      <p className="body center">
         Rough numbers are fine. No judgment.
       </p>
 
@@ -161,17 +180,19 @@ function Field({ label, value, onChange, prefix, infoKey, onInfo }) {
         </label>
         {infoKey && (
           <button
-            className="pixel"
             onClick={() => onInfo(infoKey)}
             style={{
-              width: 18,
-              height: 18,
+              width: 20,
+              height: 20,
               padding: 0,
-              border: "3px solid var(--c-darkest)",
+              border: "none",
+              borderRadius: 999,
               background: "var(--c-mid)",
               color: "var(--c-bg)",
               cursor: "pointer",
-              fontSize: 8,
+              fontSize: 11,
+              fontWeight: 700,
+              lineHeight: 1,
             }}
           >
             ?
@@ -180,16 +201,22 @@ function Field({ label, value, onChange, prefix, infoKey, onInfo }) {
       </div>
       <div
         className="row"
-        style={{ gap: 0, border: "var(--px) solid var(--c-darkest)" }}
+        style={{
+          gap: 0,
+          border: "1.5px solid rgba(45, 80, 22, 0.18)",
+          borderRadius: 10,
+          overflow: "hidden",
+          background: "#fff",
+        }}
       >
         {prefix && (
           <span
-            className="pixel"
             style={{
-              background: "var(--c-dark)",
+              background: "var(--c-mid)",
               color: "var(--c-bg)",
-              padding: "12px 10px",
-              fontSize: 14,
+              padding: "12px 14px",
+              fontSize: 15,
+              fontWeight: 700,
             }}
           >
             {prefix}
@@ -197,7 +224,7 @@ function Field({ label, value, onChange, prefix, infoKey, onInfo }) {
         )}
         <input
           className="input"
-          style={{ border: "none" }}
+          style={{ border: "none", borderRadius: 0, background: "transparent" }}
           inputMode="numeric"
           value={value}
           onChange={(e) =>
@@ -284,10 +311,18 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
 
   if (done) {
     return (
-      <div className="pad stack">
-        <h2 className="pixel">YOUR PROFILE</h2>
+      <div
+        className="pad stack"
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
+        <h2 className="pixel center">YOUR PROFILE</h2>
         <div
-          className="card"
+          className="card center"
           style={{ background: color, color: "var(--c-bg)" }}
         >
           <h1 className="pixel" style={{ color: "var(--c-bg)" }}>
@@ -295,7 +330,7 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
           </h1>
           <p
             className="body"
-            style={{ marginTop: 8, color: "var(--c-bg)", fontSize: 22 }}
+            style={{ marginTop: 8, color: "var(--c-bg)", fontSize: 15 }}
           >
             {desc}
           </p>
@@ -334,15 +369,27 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
 
   const Q = questions[qi];
   return (
-    <div className="pad stack">
-      <h2 className="pixel">RISK + GOALS</h2>
-      <p className="tiny pixel" style={{ color: "var(--c-dark)" }}>
+    <div
+      className="pad stack"
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+      }}
+    >
+      <h2 className="pixel center">RISK + GOALS</h2>
+      <p className="tiny pixel center" style={{ color: "var(--c-dark)" }}>
         QUESTION {qi + 1} / {questions.length}
       </p>
-      <div className="card quiz-pop" key={qi}>
+      <div className="card quiz-pop center" key={qi} style={{ padding: 20 }}>
         <h3
           className="pixel"
-          style={{ marginBottom: 12, color: "var(--c-dark)" }}
+          style={{
+            marginBottom: 16,
+            color: "var(--c-dark)",
+            textAlign: "center",
+          }}
         >
           {Q.q}
         </h3>
@@ -358,9 +405,11 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
           ))}
         </div>
       </div>
-      <button className="btn secondary small" onClick={onBack}>
-        ◂ BACK
-      </button>
+      <div className="center">
+        <button className="btn secondary small" onClick={onBack}>
+          ◂ BACK
+        </button>
+      </div>
     </div>
   );
 }
@@ -415,17 +464,17 @@ function BudgetSetup({ user, setUser, onNext, onBack }) {
 
   return (
     <div className="pad stack">
-      <h2 className="pixel">PAYCHECK SPLIT</h2>
-      <p className="body" style={{ fontSize: 20 }}>
+      <h2 className="pixel center">PAYCHECK SPLIT</h2>
+      <p className="body center">
         We default to <b>50 / 30 / 20</b>. Drag to taste — gently.
       </p>
 
       <div
         style={{
-          border: "var(--px) solid var(--c-darkest)",
-          height: 32,
+          border: "1px solid rgba(45, 80, 22, 0.15)",
+          height: 36,
           display: "flex",
-          borderRadius: "calc(var(--radius) - 4px)",
+          borderRadius: 10,
           overflow: "hidden",
         }}
       >
@@ -435,10 +484,10 @@ function BudgetSetup({ user, setUser, onNext, onBack }) {
             style={{
               width: splits[b.k] + "%",
               background: b.color,
-              transition: "width 0.15s steps(4, end)",
+              transition: "width 0.15s ease",
               borderRight:
                 b.k !== "save"
-                  ? "var(--px) solid var(--c-darkest)"
+                  ? "1px solid rgba(255, 255, 255, 0.18)"
                   : "none",
               display: "flex",
               alignItems: "center",
@@ -527,8 +576,8 @@ function ConnectAccounts({ onNext, onBack }) {
 
   return (
     <div className="pad stack">
-      <h2 className="pixel">CONNECT  ACCOUNTS</h2>
-      <p className="body" style={{ fontSize: 20 }}>
+      <h2 className="pixel center">CONNECT ACCOUNTS</h2>
+      <p className="body center">
         Linking your bank lets us auto-sort transactions. Or skip — you can
         scan receipts by hand.
       </p>
@@ -595,7 +644,7 @@ function MeetPlant({ user, setUser, onNext, onBack }) {
 
   if (planted) {
     return (
-      <div className="pad stack" style={{ paddingTop: 40 }}>
+      <div className="pad stack">
         <div className="center">
           <PixelSprite pixels={SPROUT_PIXELS.bud} scale={9} />
         </div>
@@ -604,7 +653,7 @@ function MeetPlant({ user, setUser, onNext, onBack }) {
           <br />
           IS GROWING!
         </h1>
-        <p className="body center" style={{ fontSize: 22 }}>
+        <p className="body center" style={{ fontSize: 16 }}>
           +$1 invested. First sprout planted.
         </p>
       </div>
@@ -613,7 +662,7 @@ function MeetPlant({ user, setUser, onNext, onBack }) {
 
   return (
     <div className="pad stack">
-      <h2 className="pixel">MEET YOUR SPROUT</h2>
+      <h2 className="pixel center">MEET YOUR SPROUT</h2>
       <div className="center" style={{ padding: "12px 0" }}>
         <PixelSprite pixels={SPROUT_PIXELS.sprout} scale={8} />
       </div>
