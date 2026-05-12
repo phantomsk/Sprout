@@ -42,11 +42,11 @@ export async function GET(request) {
   try {
     const [snapRes, barsRes] = await Promise.all([
       fetch(
-        `${ALPACA_BASE}/stocks/snapshots?symbols=${syms}&feed=iex`,
+        `${ALPACA_BASE}/stocks/snapshots?symbols=${syms}`,
         { headers, next: { revalidate: 60 } }
       ),
       fetch(
-        `${ALPACA_BASE}/stocks/bars?symbols=${syms}&timeframe=${cfg.timeframe}&limit=${cfg.limit}&feed=iex&adjustment=raw`,
+        `${ALPACA_BASE}/stocks/bars?symbols=${syms}&timeframe=${cfg.timeframe}&limit=${cfg.limit}&adjustment=raw`,
         { headers, next: { revalidate: 60 } }
       ),
     ]);
