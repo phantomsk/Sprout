@@ -1189,25 +1189,31 @@ function ScanDialog({ onClose, onSave }) {
 
         {stage === "review" && result && (
           <>
-            <div className="row between">
+            <div className="row between" style={{ alignItems: "baseline" }}>
               <div>
-                <p className="tiny pixel" style={{ color: "var(--c-dark)" }}>
-                  MERCHANT
+                <p
+                  className="body"
+                  style={{ fontSize: 11, color: "var(--c-dark)", opacity: 0.7 }}
+                >
+                  Merchant
                 </p>
-                <p className="body" style={{ fontWeight: 700 }}>
+                <p className="body" style={{ fontWeight: 500 }}>
                   {result.merchant}
                 </p>
               </div>
               <div style={{ textAlign: "right" }}>
-                <p className="tiny pixel" style={{ color: "var(--c-dark)" }}>
-                  TOTAL
+                <p
+                  className="body"
+                  style={{ fontSize: 11, color: "var(--c-dark)", opacity: 0.7 }}
+                >
+                  Total
                 </p>
-                <p className="body" style={{ fontWeight: 700 }}>
+                <p className="body" style={{ fontWeight: 500 }}>
                   ${Number(result.total).toFixed(2)}
                 </p>
               </div>
             </div>
-            <div className="stack-sm">
+            <div>
               {result.items.map((it, i) => (
                 <ItemRow
                   key={i}
@@ -1218,10 +1224,14 @@ function ScanDialog({ onClose, onSave }) {
               ))}
             </div>
             <p
-              className="tiny pixel center"
-              style={{ color: "var(--c-dark)" }}
+              className="body center"
+              style={{
+                color: "var(--c-dark)",
+                opacity: 0.6,
+                fontSize: 11,
+              }}
             >
-              ▢ AI-GUESSED CATEGORIES · TAP TO ADJUST
+              AI-guessed categories — tap to adjust
             </p>
             <div className="row" style={{ gap: 8 }}>
               <button
@@ -1250,42 +1260,91 @@ function ScanDialog({ onClose, onSave }) {
 function ItemRow({ item, onChange, onRemove }) {
   const cats = ["NEEDS", "WANTS", "SAVE"];
   return (
-    <div className="card" style={{ padding: 10 }}>
-      <div className="row" style={{ gap: 8 }}>
+    <div
+      style={{
+        padding: "10px 2px",
+        borderBottom: "1px solid rgba(45, 80, 22, 0.08)",
+      }}
+    >
+      <div className="row" style={{ gap: 8, alignItems: "center" }}>
         <input
-          className="input"
-          style={{ fontSize: 14, padding: "8px 10px", flex: 1 }}
+          style={{
+            flex: 1,
+            fontSize: 14,
+            fontWeight: 600,
+            padding: "6px 0",
+            border: "none",
+            outline: "none",
+            background: "transparent",
+            color: "var(--c-darkest)",
+          }}
           value={item.name}
           onChange={(e) => onChange({ name: e.target.value })}
         />
         <input
-          className="input"
           type="number"
           step="0.01"
-          style={{ fontSize: 14, padding: "8px 10px", width: 86 }}
+          style={{
+            width: 70,
+            fontSize: 14,
+            fontWeight: 600,
+            padding: "6px 0",
+            border: "none",
+            outline: "none",
+            background: "transparent",
+            textAlign: "right",
+            color: "var(--c-darkest)",
+          }}
           value={item.price}
           onChange={(e) => onChange({ price: Number(e.target.value) || 0 })}
         />
-      </div>
-      <div className="row" style={{ gap: 6, marginTop: 8 }}>
-        {cats.map((cat) => (
-          <button
-            key={cat}
-            className={"btn small" + (item.category === cat ? "" : " secondary")}
-            style={{ flex: 1, padding: "8px 6px" }}
-            onClick={() => onChange({ category: cat })}
-          >
-            {cat}
-          </button>
-        ))}
         <button
-          className="btn small secondary"
-          style={{ padding: "8px 10px" }}
           onClick={onRemove}
           aria-label="Remove item"
+          style={{
+            width: 22,
+            height: 22,
+            padding: 0,
+            border: "none",
+            borderRadius: 999,
+            background: "transparent",
+            color: "var(--c-dark)",
+            opacity: 0.5,
+            cursor: "pointer",
+            fontSize: 14,
+            lineHeight: 1,
+          }}
         >
           ✕
         </button>
+      </div>
+      <div className="row" style={{ gap: 6, marginTop: 8 }}>
+        {cats.map((cat) => {
+          const active = item.category === cat;
+          return (
+            <button
+              key={cat}
+              onClick={() => onChange({ category: cat })}
+              style={{
+                flex: 1,
+                padding: "10px 6px",
+                fontSize: 12,
+                fontWeight: 500,
+                letterSpacing: 0.4,
+                border: active
+                  ? "3px solid var(--c-dark)"
+                  : "3px solid rgba(45, 80, 22, 0.5)",
+                borderRadius: 0,
+                background: active ? "var(--c-mid)" : "transparent",
+                color: active ? "var(--c-bg)" : "var(--c-dark)",
+                cursor: "pointer",
+                transition: "background 0.12s, color 0.12s, border-color 0.12s",
+              }}
+            >
+              {cat}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
