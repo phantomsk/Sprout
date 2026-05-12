@@ -6,7 +6,7 @@ import { Onboarding } from "./Onboarding";
 import { MainApp } from "./MainApp";
 
 export function SproutApp() {
-  const [route, setRoute] = useState("intro");
+  const [route, setRoute] = useState("auth");
   const [tab, setTab] = useState("home");
   const [user, setUser] = useState({
     name: "",
@@ -20,7 +20,6 @@ export function SproutApp() {
     mood: null,
   });
 
-  // On first mount, check if a Supabase session exists — if so, skip auth.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -28,9 +27,15 @@ export function SproutApp() {
         const { getSupabaseBrowser } = await import("@/lib/supabase/client");
         const supabase = getSupabaseBrowser();
         const { data } = await supabase.auth.getSession();
-        if (!cancelled && data.session) setRoute("app");
+        if (!cancelled && data.session) {
+          const meta = data.session.user?.user_metadata;
+          if (meta?.full_name) {
+            setUser((u) => ({ ...u, name: meta.full_name }));
+          }
+          setRoute("app");
+        }
       } catch {
-        // No Supabase configured yet — stay on intro.
+        // No Supabase configured yet — stay on auth.
       }
     })();
     return () => {
@@ -60,14 +65,28 @@ export function SproutApp() {
     setRoute("auth");
   };
 
+  const handleLogin = async () => {
+    try {
+      const { getSupabaseBrowser } = await import("@/lib/supabase/client");
+      const supabase = getSupabaseBrowser();
+      const { data } = await supabase.auth.getSession();
+      const meta = data?.session?.user?.user_metadata;
+      if (meta?.full_name) {
+        setUser((u) => ({ ...u, name: meta.full_name }));
+      }
+    } catch {}
+    setRoute("app");
+  };
+
   let body;
-  if (route === "intro")
-    body = <Intro onNext={() => setRoute("auth")} />;
-  else if (route === "auth")
+  if (route === "auth")
     body = (
       <Auth
-        onLogin={() => setRoute("app")}
-        onSignup={() => setRoute("onboarding")}
+        onLogin={handleLogin}
+        onSignup={(name) => {
+          if (name) setUser((u) => ({ ...u, name }));
+          setRoute("onboarding");
+        }}
       />
     );
   else if (route === "onboarding")
@@ -92,117 +111,9 @@ export function SproutApp() {
   return body;
 }
 
-function Intro({ onNext }) {
-  const [slide, setSlide] = useState(0);
-  const pillars = [
-    {
-      sprite: SPROUT_PIXELS.seed,
-      title: "BUDGET",
-      body: "Split your paycheck into needs, wants, and savings. We do the math.",
-    },
-    {
-      sprite: SPROUT_PIXELS.sprout,
-      title: "INVEST",
-      body: "Plant a sprout for every investment. Watch a tiny portfolio bloom.",
-    },
-    {
-      sprite: SPROUT_PIXELS.tree,
-      title: "GROW",
-      body: "A calm, guided home base for the long, weird road to wealth.",
-    },
-  ];
-
-  return (
-    <div className="screen screen-enter" style={{ background: "var(--c-bg)" }}>
-      <div style={{ position: "relative", height: 360, overflow: "hidden" }}>
-        <div className="cloud" style={{ top: 30, left: 30 }} />
-        <div
-          className="cloud"
-          style={{ top: 70, left: 180, animationDelay: "-7s" }}
-        />
-        <div
-          className="cloud"
-          style={{ top: 110, left: 60, animationDelay: "-3s" }}
-        />
-
-        <div
-          style={{
-            position: "absolute",
-            bottom: 60,
-            left: "50%",
-            transform: "translateX(-50%)",
-          }}
-        >
-          <PixelSprite pixels={pillars[slide].sprite} scale={9} />
-        </div>
-
-        <div className="grass-strip" style={{ bottom: 0 }} />
-      </div>
-
-      <div className="pad stack">
-        <div className="center">
-          <h1 className="pixel" style={{ color: "var(--c-darkest)" }}>
-            SPROUT
-          </h1>
-          <p
-            className="body"
-            style={{ marginTop: 6, color: "var(--c-dark)" }}
-          >
-            Money stuff is stressful.
-            <br />
-            Take it one step at a time.
-          </p>
-        </div>
-
-        <div className="card stack-sm">
-          <h3 className="pixel" style={{ color: "var(--c-dark)" }}>
-            ★ {pillars[slide].title}
-          </h3>
-          <p className="body">{pillars[slide].body}</p>
-
-          <div
-            className="row"
-            style={{ justifyContent: "center", gap: 6, marginTop: 6 }}
-          >
-            {pillars.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setSlide(i)}
-                aria-label={"slide " + (i + 1)}
-                style={{
-                  width: 12,
-                  height: 12,
-                  background:
-                    i === slide ? "var(--c-dark)" : "var(--c-cream-shadow)",
-                  border: "2px solid var(--c-darkest)",
-                  cursor: "pointer",
-                  padding: 0,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <button className="btn full" onClick={onNext}>
-          GET STARTED
-        </button>
-        <button className="btn full secondary" onClick={onNext}>
-          I HAVE AN ACCOUNT
-        </button>
-
-        <p
-          className="tiny pixel center"
-          style={{ color: "var(--c-dark)", marginTop: 8 }}
-        >
-          v0.1 · made with ♥ + photosynthesis
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function Auth({ onLogin, onSignup }) {
   const [mode, setMode] = useState("signup");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -213,6 +124,10 @@ function Auth({ onLogin, onSignup }) {
     e?.preventDefault?.();
     setError(null);
     setInfo(null);
+    if (mode === "signup" && !fullName.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
     if (!email.trim() || !password) {
       setError("Email and password are required.");
       return;
@@ -230,15 +145,15 @@ function Auth({ onLogin, onSignup }) {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
+          options: { data: { full_name: fullName.trim() } },
         });
         if (error) throw error;
-        // If email confirmation is enabled in Supabase, no session yet.
         if (!data.session) {
           setInfo("Check your email to confirm, then come back to log in.");
           setMode("login");
           return;
         }
-        onSignup();
+        onSignup(fullName.trim());
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -261,8 +176,24 @@ function Auth({ onLogin, onSignup }) {
 
   return (
     <div className="screen screen-enter pad stack narrow">
-      <div className="center" style={{ marginTop: 8 }}>
-        <PixelSprite pixels={SPROUT_PIXELS.sprout} scale={7} />
+      <div
+        className="center"
+        style={{
+          marginTop: 8,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <img
+          src="/animated-logo.gif"
+          alt="Sprout"
+          style={{
+            width: 420,
+            height: 200,
+            objectFit: "contain",
+          }}
+        />
         <h1 className="pixel" style={{ marginTop: 8 }}>
           {mode === "signup" ? "PLANT YOUR SEED" : "WELCOME BACK"}
         </h1>
@@ -325,6 +256,19 @@ function Auth({ onLogin, onSignup }) {
       </div>
 
       <form onSubmit={submit} className="stack" noValidate>
+        {mode === "signup" && (
+          <div>
+            <label className="input-label">YOUR NAME</label>
+            <input
+              className="input"
+              type="text"
+              autoComplete="name"
+              placeholder="What should we call you?"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+          </div>
+        )}
         <div>
           <label className="input-label">EMAIL</label>
           <input

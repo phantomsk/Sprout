@@ -56,6 +56,7 @@ function HomeTab({ user, setUser, setTab }) {
   const [mood, setMood] = useState(user.mood);
   const dollars = (pct) => Math.round((user.income * pct) / 100);
   const [spent] = useState({ needs: 0.62, wants: 0.78, save: 0.34 });
+  const [nudgeIdx, setNudgeIdx] = useState(0);
 
   const moods = [
     { e: "◕‿◕", label: "GOOD" },
@@ -63,172 +64,293 @@ function HomeTab({ user, setUser, setTab }) {
     { e: "×_×", label: "BAD" },
   ];
 
-  const insights = [
-    "You've ordered delivery 6× this week — want a soft limit?",
-    "Cool. You're $48 under in WANTS so far. Nice pacing.",
-    "Reminder: payday Friday. Sprout will auto-plant $25.",
+  const nudges = [
+    { icon: "🍕", text: "Delivery 6× this week — soft limit?", color: "var(--c-accent)" },
+    { icon: "✓", text: "$48 under in WANTS. Nice pacing!", color: "var(--c-mid)" },
+    { icon: "💰", text: "Payday Fri — auto-plant $25", color: "var(--c-dark)" },
   ];
 
+  const totalSpent = Math.round(
+    dollars(user.splits.needs) * spent.needs +
+    dollars(user.splits.wants) * spent.wants +
+    dollars(user.splits.save) * spent.save
+  );
+  const totalInvested = user.plants.reduce((s, p) => s + p.value, 0);
+  const firstName = (user.name || "Player 1").split(" ")[0];
+
   return (
-    <div className="screen-enter pad stack">
-      <div className="row between">
-        <div>
-          <p className="tiny pixel" style={{ color: "var(--c-dark)" }}>
-            GOOD MORNING
-          </p>
-          <h2 className="pixel" style={{ marginTop: 4 }}>
-            HEY, PLAYER 1
+    <div
+      className="screen-enter pad"
+      style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "auto" }}
+    >
+      {/* Header */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <img
+          src="/animated-logo.gif"
+          alt="Sprout"
+          style={{ width: 300, height: 200, objectFit: "contain", marginTop: -16, marginBottom: -30 }}
+        />
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", width: "100%" }}>
+          <h2 className="pixel" style={{ fontSize: 20 }}>
+            HEY, {firstName.toUpperCase()}
           </h2>
-        </div>
-        <div style={{ marginRight: -4 }}>
-          <PixelSprite pixels={SPROUT_PIXELS.sprout} scale={4} />
-        </div>
-      </div>
-
-      <div className="card stack-sm">
-        <div className="row between">
-          <h3 className="pixel">★ TODAY&apos;S BUCKETS</h3>
-          <span className="tiny pixel" style={{ color: "var(--c-dark)" }}>
-            MAY 11
-          </span>
-        </div>
-        <BucketRow
-          color="var(--c-dark)"
-          label="NEEDS"
-          pct={spent.needs}
-          cap={dollars(user.splits.needs)}
-        />
-        <BucketRow
-          color="var(--c-accent)"
-          label="WANTS"
-          pct={spent.wants}
-          cap={dollars(user.splits.wants)}
-        />
-        <BucketRow
-          color="var(--c-mid-light)"
-          label="SAVE"
-          pct={spent.save}
-          cap={dollars(user.splits.save)}
-        />
-      </div>
-
-      <div
-        className="card green"
-        style={{ position: "relative", overflow: "hidden" }}
-      >
-        <div className="row between">
-          <div>
-            <h3 className="pixel" style={{ color: "var(--c-bg)" }}>
-              YOUR GARDEN
-            </h3>
-            <p
-              className="body"
-              style={{ color: "var(--c-bg)", marginTop: 4 }}
-            >
-              {user.plants.length} plant
-              {user.plants.length !== 1 ? "s" : ""} · est. $
-              {user.plants.reduce((s, p) => s + p.value, 0).toFixed(2)}
-            </p>
-          </div>
-          <button
-            className="btn small dark"
-            onClick={() => setTab("garden")}
-          >
-            VIEW ▸
-          </button>
-        </div>
-        <div
-          className="row"
-          style={{ gap: 8, marginTop: 12, justifyContent: "flex-start" }}
-        >
-          <PixelSprite pixels={SPROUT_PIXELS.sprout} scale={4} />
-          <PixelSprite pixels={SPROUT_PIXELS.seed} scale={4} />
-          <PixelSprite pixels={SPROUT_PIXELS.seed} scale={4} bob={false} />
-          <div
-            style={{
-              width: 44,
-              height: 52,
-              opacity: 0.4,
-              border: "4px dashed var(--c-bg)",
-            }}
-          />
-        </div>
-      </div>
-
-      {mood === null ? (
-        <div className="card stack-sm">
-          <h3 className="pixel">♦ HOW&apos;S MONEY FEEL TODAY?</h3>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 8,
-            }}
-          >
-            {moods.map((m, i) => (
-              <button
-                key={i}
-                className="btn secondary"
-                style={{
-                  flexDirection: "column",
-                  gap: 6,
-                  padding: "12px 8px",
-                  minHeight: 68,
-                  width: "100%",
-                }}
-                onClick={() => {
-                  setMood(i);
-                  setUser((u) => ({ ...u, mood: i }));
-                }}
-              >
-                <span style={{ fontSize: 18, lineHeight: 1 }}>{m.e}</span>
-                <span style={{ fontSize: 11, letterSpacing: 0.4 }}>
-                  {m.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div
-          className="card stack-sm"
-          style={{ background: "var(--c-mid-light)" }}
-        >
-          <h3 className="pixel">♦ NOTED · {moods[mood].label}</h3>
-          <p className="body">
-            Thanks. We&apos;ll keep an eye out and ease off the nudges if
-            you&apos;re stressed.
+          <p className="tiny pixel" style={{ color: "var(--c-dark)", textAlign: "right" }}>
+            GROW YOUR<br />WEALTH
           </p>
         </div>
-      )}
+      </div>
 
-      <div className="row" style={{ gap: 8 }}>
-        <button className="btn secondary full small">
-          <span>▦ SCAN</span>
-        </button>
-        <button className="btn secondary full small">
-          <span>+ LOG</span>
+      {/* Action buttons */}
+      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+        <button
+          className="btn small"
+          style={{ flex: 1, background: "var(--c-accent)", color: "var(--c-darkest)", borderColor: "var(--c-accent)" }}
+          onClick={() => setTab("budget")}
+        >
+          ▦ SCAN
         </button>
         <button
-          className="btn secondary full small"
+          className="btn small"
+          style={{ flex: 1, background: "var(--c-mid)", color: "var(--c-bg)", borderColor: "var(--c-mid)" }}
+          onClick={() => setTab("budget")}
+        >
+          + LOG
+        </button>
+        <button
+          className="btn small"
+          style={{ flex: 1, background: "var(--c-dark)", color: "var(--c-bg)", borderColor: "var(--c-dark)" }}
           onClick={() => setTab("invest")}
         >
-          <span>↑ INVEST</span>
+          ↑ INVEST
         </button>
       </div>
 
-      <h3 className="pixel" style={{ marginTop: 8 }}>
-        ★ NUDGES
-      </h3>
-      <div className="stack-sm">
-        {insights.map((t, i) => (
-          <div key={i} className="card" style={{ padding: 10 }}>
-            <p className="body">→ {t}</p>
-          </div>
-        ))}
-      </div>
+      {/* Main widget area */}
+      <div style={{ flex: 1, paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Stat row */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+          <StatWidget
+            value={`$${totalSpent}`}
+            label="SPENT"
+            sub={`of $${user.income}`}
+            onClick={() => setTab("budget")}
+          />
+          <StatWidget
+            value={`$${totalInvested.toFixed(0)}`}
+            label="INVESTED"
+            sub={`${user.plants.length} plant${user.plants.length !== 1 ? "s" : ""}`}
+            onClick={() => setTab("invest")}
+          />
+          <StatWidget
+            value={`${Math.round((1 - (totalSpent / user.income)) * 100)}%`}
+            label="LEFT"
+            sub={`$${user.income - totalSpent}`}
+            onClick={() => setTab("budget")}
+          />
+        </div>
 
-      <div style={{ height: 12 }} />
+        {/* 2-col widget grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, flex: 1 }}>
+          {/* Budget widget — spans 2 rows */}
+          <div
+            className="card"
+            style={{ padding: 14, cursor: "pointer", gridRow: "span 2", display: "flex", flexDirection: "column" }}
+            onClick={() => setTab("budget")}
+          >
+            <p className="tiny pixel" style={{ color: "var(--c-dark)", marginBottom: 10 }}>
+              BUDGET
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", flex: 1, alignItems: "center" }}>
+              <MiniPie splits={user.splits} income={user.income} />
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <MiniBar label="N" pct={spent.needs} amt={`$${Math.round(dollars(user.splits.needs) * spent.needs)}`} color="var(--c-dark)" />
+              <MiniBar label="W" pct={spent.wants} amt={`$${Math.round(dollars(user.splits.wants) * spent.wants)}`} color="var(--c-accent)" />
+              <MiniBar label="S" pct={spent.save} amt={`$${Math.round(dollars(user.splits.save) * spent.save)}`} color="var(--c-mid-light)" />
+            </div>
+          </div>
+
+          {/* Garden widget */}
+          <div
+            className="card green"
+            style={{ padding: 14, cursor: "pointer", overflow: "hidden", display: "flex", flexDirection: "column" }}
+            onClick={() => setTab("garden")}
+          >
+            <p className="tiny pixel" style={{ color: "var(--c-bg)", marginBottom: 8 }}>
+              GARDEN
+            </p>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center", flex: 1, alignItems: "center" }}>
+              <PixelSprite pixels={SPROUT_PIXELS.sprout} scale={3} />
+              <PixelSprite pixels={SPROUT_PIXELS.seed} scale={3} />
+              <PixelSprite pixels={SPROUT_PIXELS.seed} scale={3} bob={false} />
+            </div>
+            <p className="tiny pixel" style={{ color: "var(--c-bg)", marginTop: 6, textAlign: "center" }}>
+              {user.plants.length} PLANT{user.plants.length !== 1 ? "S" : ""} · ${totalInvested.toFixed(2)}
+            </p>
+          </div>
+
+          {/* Mood widget */}
+          <div className="card" style={{ padding: 14, display: "flex", flexDirection: "column" }}>
+            {mood === null ? (
+              <>
+                <p className="tiny pixel" style={{ color: "var(--c-dark)", marginBottom: 8 }}>
+                  VIBE CHECK
+                </p>
+                <div style={{ display: "flex", gap: 6, justifyContent: "center", flex: 1, alignItems: "center" }}>
+                  {moods.map((m, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { setMood(i); setUser((u) => ({ ...u, mood: i })); }}
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        border: "none",
+                        background: "var(--c-cream)",
+                        cursor: "pointer",
+                        fontSize: 15,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {m.e}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="tiny pixel" style={{ color: "var(--c-dark)", marginBottom: 4 }}>
+                  VIBE
+                </p>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                  <p style={{ fontSize: 28, lineHeight: 1 }}>{moods[mood].e}</p>
+                  <p className="tiny pixel" style={{ color: "var(--c-dark)", marginTop: 6 }}>
+                    {moods[mood].label}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Nudge ticker */}
+        <div
+          className="card"
+          style={{
+            padding: "10px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            cursor: "pointer",
+          }}
+          onClick={() => setNudgeIdx((i) => (i + 1) % nudges.length)}
+        >
+          <span
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: nudges[nudgeIdx].color,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 16,
+              flexShrink: 0,
+            }}
+          >
+            {nudges[nudgeIdx].icon}
+          </span>
+          <p className="body" style={{ fontSize: 13, lineHeight: 1.35, flex: 1 }}>
+            {nudges[nudgeIdx].text}
+          </p>
+          <span className="tiny pixel" style={{ color: "var(--c-cream-shadow)", flexShrink: 0 }}>
+            {nudgeIdx + 1}/{nudges.length}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatWidget({ value, label, sub, onClick }) {
+  return (
+    <div
+      className="card"
+      style={{ textAlign: "center", padding: "12px 6px", cursor: "pointer" }}
+      onClick={onClick}
+    >
+      <p className="pixel" style={{ fontSize: 15, color: "var(--c-darkest)" }}>
+        {value}
+      </p>
+      <p className="tiny pixel" style={{ color: "var(--c-dark)", marginTop: 3 }}>
+        {label}
+      </p>
+      <p
+        className="body"
+        style={{ fontSize: 11, color: "var(--c-mid)", marginTop: 2, fontWeight: 600 }}
+      >
+        {sub}
+      </p>
+    </div>
+  );
+}
+
+function MiniPie({ splits, income }) {
+  const data = [
+    { value: splits.needs, color: "var(--c-dark)" },
+    { value: splits.wants, color: "var(--c-accent)" },
+    { value: splits.save, color: "var(--c-mid-light)" },
+  ].filter((d) => d.value > 0);
+  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  const r = 48;
+  const cx = r;
+  const cy = r;
+  const vb = r * 2;
+  let cum = -Math.PI / 2;
+  return (
+    <svg width="100%" viewBox={`0 0 ${vb} ${vb}`} style={{ maxWidth: 140, display: "block" }}>
+      {data.length === 1 ? (
+        <circle cx={cx} cy={cy} r={r} fill={data[0].color} />
+      ) : (
+        data.map((d, i) => {
+          const angle = (d.value / total) * 2 * Math.PI;
+          const a0 = cum;
+          cum += angle;
+          const a1 = cum;
+          const x0 = cx + r * Math.cos(a0);
+          const y0 = cy + r * Math.sin(a0);
+          const x1 = cx + r * Math.cos(a1);
+          const y1 = cy + r * Math.sin(a1);
+          const large = angle > Math.PI ? 1 : 0;
+          return (
+            <path
+              key={i}
+              d={`M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} Z`}
+              fill={d.color}
+              stroke="#fff"
+              strokeWidth="1.5"
+            />
+          );
+        })
+      )}
+      <circle cx={cx} cy={cy} r={r * 0.38} fill="var(--c-cream)" />
+      <text x={cx} y={cy + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--c-dark)">
+        ${(income / 1000).toFixed(1)}K
+      </text>
+    </svg>
+  );
+}
+
+function MiniBar({ label, pct, amt, color }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5 }}>
+      <span className="tiny pixel" style={{ color: "var(--c-dark)", width: 12 }}>{label}</span>
+      <div style={{ flex: 1, height: 6, background: "var(--c-cream-shadow)", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ width: `${Math.min(1, pct) * 100}%`, height: "100%", background: color, borderRadius: 3 }} />
+      </div>
+      {amt && <span style={{ fontSize: 9, fontWeight: 600, color: "var(--c-dark)", minWidth: 28, textAlign: "right" }}>{amt}</span>}
     </div>
   );
 }
@@ -1739,7 +1861,7 @@ function ProfileTab({ user, onSignOut }) {
       <div className="center" style={{ padding: "12px 0" }}>
         <PixelSprite pixels={SPROUT_PIXELS.bloom} scale={7} />
         <h2 className="pixel" style={{ marginTop: 12 }}>
-          PLAYER 1
+          {(user.name || "PLAYER 1").toUpperCase()}
         </h2>
         <p
           className="tiny pixel"

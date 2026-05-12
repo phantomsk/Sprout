@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { TweaksContext } from "./PixelSprite";
 
 const MEADOW_VARS = {
@@ -27,19 +26,14 @@ const TWEAKS = {
 };
 
 export function TweaksRoot({ children }) {
-  useEffect(() => {
-    const phone = document.querySelector(".phone");
-    if (!phone) return;
-    Object.entries(MEADOW_VARS).forEach(([k, v]) =>
-      phone.style.setProperty(k, v)
-    );
-    phone.style.setProperty("--radius", TWEAKS.radius + "px");
-    phone.classList.add("soft");
-  }, []);
-
   return (
     <TweaksContext.Provider value={TWEAKS}>
-      <div className="phone">{children}</div>
+      <div
+        className="phone soft"
+        style={{ ...MEADOW_VARS, "--radius": TWEAKS.radius + "px" }}
+      >
+        {children}
+      </div>
     </TweaksContext.Provider>
   );
 }
