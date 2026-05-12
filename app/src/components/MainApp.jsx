@@ -17,8 +17,11 @@ export function MainApp({ tab, setTab, user, setUser, onSignOut }) {
           <HomeTab user={user} setUser={setUser} setTab={setTab} />
         )}
         {tab === "budget" && <BudgetTab user={user} setUser={setUser} />}
-        {tab === "invest" && <InvestTab user={user} setUser={setUser} />}
+        {tab === "invest" && (
+          <InvestTab user={user} setUser={setUser} setTab={setTab} />
+        )}
         {tab === "garden" && <GardenTab user={user} setUser={setUser} />}
+        {tab === "community" && <CommunityTab user={user} />}
         {tab === "profile" && (
           <ProfileTab user={user} setUser={setUser} onSignOut={onSignOut} />
         )}
@@ -58,6 +61,7 @@ function TabBar({ tab, setTab }) {
     { k: "budget", label: "BUDGET", ico: ICONS.budget },
     { k: "invest", label: "INVEST", ico: ICONS.invest },
     { k: "garden", label: "GARDEN", ico: ICONS.garden },
+    { k: "community", label: "COMM", ico: ICONS.community },
     { k: "profile", label: "YOU", ico: ICONS.profile },
   ];
   return (
@@ -151,12 +155,34 @@ function HomeTab({ user, setUser, setTab }) {
           alt="Sprout"
           style={{ width: 300, height: 200, objectFit: "contain", marginTop: -16, marginBottom: -30 }}
         />
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", width: "100%" }}>
-          <h2 className="pixel" style={{ fontSize: 20 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            gap: 12,
+          }}
+        >
+          <h2 className="pixel" style={{ fontSize: 20, flexShrink: 0 }}>
             HEY, {firstName.toUpperCase()}
           </h2>
-          <p className="tiny pixel" style={{ color: "var(--c-dark)", textAlign: "right" }}>
-            GROW YOUR<br />WEALTH
+          <p
+            style={{
+              fontFamily: "var(--font-body), system-ui, sans-serif",
+              fontStyle: "italic",
+              fontWeight: 600,
+              fontSize: 12,
+              textAlign: "right",
+              color: "var(--c-dark)",
+              lineHeight: 1.2,
+              letterSpacing: 0.2,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span style={{ color: "var(--c-mid)", marginRight: 4 }}>✿</span>
+            Plant the Seeds of Financial Freedom
+            <span style={{ color: "var(--c-mid)", marginLeft: 4 }}>✿</span>
           </p>
         </div>
       </div>
@@ -446,11 +472,22 @@ function BudgetTab({ user, setUser }) {
 
   return (
     <div className="screen-enter pad stack">
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
         <PageTitle src="/animations/budget.png" alt="Budget" />
         <div
           className="row"
           style={{
+            position: "absolute",
+            right: 0,
+            top: "50%",
+            transform: "translateY(-50%)",
             gap: 3,
             padding: 3,
             background: "rgba(45, 80, 22, 0.08)",
@@ -678,7 +715,7 @@ function BudgetView({ user, setUser }) {
         placeholder="Search items…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        style={{ fontSize: 14, padding: "10px 12px" }}
+        style={{ fontSize: 14, padding: "10px 12px", background: "#fff" }}
       />
 
       <div className="row wrap" style={{ gap: 6 }}>
@@ -1389,7 +1426,7 @@ const PICK_INFO = {
   },
 };
 
-function InvestTab({ user, setUser }) {
+function InvestTab({ user, setUser, setTab }) {
   const [confirm, setConfirm] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showBook, setShowBook] = useState(false);
@@ -1433,6 +1470,7 @@ function InvestTab({ user, setUser }) {
       ],
     }));
     setConfirm(null);
+    setTab?.("garden");
   };
 
   return (
@@ -2106,27 +2144,63 @@ function InvestConfirm({ pick, onCancel, onPlant }) {
   );
 }
 
-// Map a plant + time-travel years to one of the user's animation gifs.
-// Stage progression:
-//   year 0       → sprout.gif
-//   year 1–4     → sprout2.gif
-//   year 5–9     → rose1.gif or sun1.gif (per plant)
-//   year 10+     → rose2.gif or sun2.gif (per plant)
+// Stage thresholds (dollars invested → stage index)
+//   0  Sprout        < $25
+//   1  Growing       $25 - $99.99
+//   2  Budding       $100 - $499.99
+//   3  Full Bloom    $500+
+const STAGE_THRESHOLDS = [0, 25, 100, 500];
+const STAGE_LABELS = ["SPROUT", "GROWING", "BUDDING", "BLOOM"];
+
+function valueStageIdx(value) {
+  if (value >= 500) return 3;
+  if (value >= 100) return 2;
+  if (value >= 25) return 1;
+  return 0;
+}
+function yearsStageIdx(yearsAhead) {
+  if (yearsAhead >= 10) return 3;
+  if (yearsAhead >= 5) return 2;
+  if (yearsAhead >= 1) return 1;
+  return 0;
+}
+function nextStageInfo(value) {
+  const idx = valueStageIdx(value);
+  if (idx === STAGE_THRESHOLDS.length - 1) return null;
+  const nextIdx = idx + 1;
+  return {
+    label: STAGE_LABELS[nextIdx],
+    threshold: STAGE_THRESHOLDS[nextIdx],
+    needed: Math.max(0, STAGE_THRESHOLDS[nextIdx] - value),
+    fromThreshold: STAGE_THRESHOLDS[idx],
+  };
+}
+
+// Stage = max of value-stage and time-travel-stage so watering AND time travel
+// can each move the plant forward.
+function plantStageIdx(plant, yearsAhead) {
+  return Math.max(
+    valueStageIdx(plant.value || 0),
+    yearsStageIdx(yearsAhead || 0),
+  );
+}
+
 function plantGif(plant, yearsAhead) {
   const flower =
     plant.flowerType ||
     ((Number(plant.id) || 0) % 2 === 0 ? "rose" : "sun");
-  if (yearsAhead >= 10) return `/animations/${flower}2.gif`;
-  if (yearsAhead >= 5) return `/animations/${flower}1.gif`;
-  if (yearsAhead >= 1) return `/animations/sprout2.gif`;
+  const idx = plantStageIdx(plant, yearsAhead);
+  if (idx >= 3) return `/animations/${flower}2.gif`;
+  if (idx >= 2) return `/animations/${flower}1.gif`;
+  if (idx >= 1) return `/animations/sprout2.gif`;
   return `/animations/sprout.gif`;
 }
 
-function plantStageLabel(yearsAhead) {
-  if (yearsAhead >= 10) return "BLOOM";
-  if (yearsAhead >= 5) return "BUDDING";
-  if (yearsAhead >= 1) return "GROWING";
-  return "SPROUT";
+function plantStageLabel(yearsAhead, plant) {
+  const idx = plant
+    ? plantStageIdx(plant, yearsAhead)
+    : yearsStageIdx(yearsAhead);
+  return STAGE_LABELS[idx];
 }
 
 function RainSky() {
@@ -2321,14 +2395,6 @@ function GardenTab({ user, setUser }) {
         </p>
       </div>
 
-      <h3 className="pixel">★ ACHIEVEMENTS</h3>
-      <div className="row wrap" style={{ gap: 8 }}>
-        <Achievement done label="FIRST SPROUT" />
-        <Achievement done={user.plants.length >= 3} label="3-PLANT POT" />
-        <Achievement done={false} label="7-DAY STREAK" />
-        <Achievement done={false} label="$100 PLANTED" />
-      </div>
-
       <div style={{ height: 12 }} />
 
       {focused && (
@@ -2336,13 +2402,447 @@ function GardenTab({ user, setUser }) {
           plant={focused}
           years={yearsAhead}
           proj={projected(focused.value)}
-          stageLabel={plantStageLabel(yearsAhead)}
+          stageLabel={plantStageLabel(yearsAhead, focused)}
           gif={plantGif(focused, yearsAhead)}
           hue={focused.hue || 0}
+          nextStage={nextStageInfo(focused.value)}
           onWater={(amt) => waterPlant(focused.id, amt)}
           onClose={() => setFocused(null)}
         />
       )}
+    </div>
+  );
+}
+
+const COMMUNITY_TOP = [
+  {
+    rank: 1,
+    name: "Maya R.",
+    plants: 47,
+    value: 2840.5,
+    garden: [
+      { id: "m1", flower: "rose", hue: 0, value: 600 },
+      { id: "m2", flower: "sun", hue: 30, value: 320 },
+      { id: "m3", flower: "rose", hue: 60, value: 180 },
+      { id: "m4", flower: "sun", hue: 240, value: 700 },
+      { id: "m5", flower: "rose", hue: 290, value: 220 },
+      { id: "m6", flower: "sun", hue: 0, value: 130 },
+    ],
+  },
+  {
+    rank: 2,
+    name: "Jordan K.",
+    plants: 38,
+    value: 2310.75,
+    garden: [
+      { id: "j1", flower: "sun", hue: 30, value: 480 },
+      { id: "j2", flower: "rose", hue: 0, value: 160 },
+      { id: "j3", flower: "sun", hue: 240, value: 350 },
+      { id: "j4", flower: "rose", hue: 60, value: 110 },
+      { id: "j5", flower: "sun", hue: 0, value: 90 },
+      { id: "j6", flower: "rose", hue: 290, value: 40 },
+    ],
+  },
+  {
+    rank: 3,
+    name: "Alex T.",
+    plants: 29,
+    value: 1890.2,
+    garden: [
+      { id: "a1", flower: "rose", hue: 290, value: 280 },
+      { id: "a2", flower: "sun", hue: 0, value: 120 },
+      { id: "a3", flower: "rose", hue: 0, value: 200 },
+      { id: "a4", flower: "sun", hue: 30, value: 60 },
+      { id: "a5", flower: "rose", hue: 60, value: 30 },
+      { id: "a6", flower: "sun", hue: 240, value: 20 },
+    ],
+  },
+];
+
+const DIRECTORY = [
+  {
+    name: "Maya R.",
+    role: "Indexing nerd · 47 plants",
+    blurb: "Happy to chat about ETF strategy.",
+    flower: "rose",
+    hue: 0,
+  },
+  {
+    name: "Jordan K.",
+    role: "Saving for grad school",
+    blurb: "Ask me about HSA hacks.",
+    flower: "sun",
+    hue: 30,
+  },
+  {
+    name: "Alex T.",
+    role: "Just started · year 1",
+    blurb: "Same boat. Let's swap notes.",
+    flower: "rose",
+    hue: 290,
+  },
+  {
+    name: "Sam L.",
+    role: "Roth IRA evangelist",
+    blurb: "Will preach the long game.",
+    flower: "sun",
+    hue: 240,
+  },
+  {
+    name: "Priya S.",
+    role: "Bonds + CDs · sleep well",
+    blurb: "Risk-averse but always learning.",
+    flower: "rose",
+    hue: 60,
+  },
+];
+
+function CommunityTab({ user }) {
+  const [messageTo, setMessageTo] = useState(null);
+
+  return (
+    <div className="screen-enter pad stack">
+      <PageTitle src="/animations/community.png" alt="Community" />
+      <p
+        className="body center"
+        style={{ color: "var(--c-dark)", marginTop: -4 }}
+      >
+        Grow together, share what works.
+      </p>
+
+      {/* Achievements */}
+      <h3 className="pixel" style={{ marginTop: 8 }}>
+        ★ ACHIEVEMENTS
+      </h3>
+      <div className="row wrap" style={{ gap: 8 }}>
+        <Achievement done label="FIRST SPROUT" />
+        <Achievement done={user.plants.length >= 3} label="3-PLANT POT" />
+        <Achievement done={false} label="7-DAY STREAK" />
+        <Achievement done={false} label="$100 PLANTED" />
+      </div>
+
+      {/* Community Garden — top 3 leaderboard */}
+      <h3 className="pixel" style={{ marginTop: 12 }}>
+        ✦ COMMUNITY GARDEN
+      </h3>
+      <p
+        className="tiny pixel"
+        style={{ color: "var(--c-dark)", marginTop: -4 }}
+      >
+        TOP GROWERS THIS WEEK
+      </p>
+      <div className="community-leaders">
+        {COMMUNITY_TOP.map((c) => (
+          <LeaderRow key={c.rank} entry={c} />
+        ))}
+      </div>
+
+      {/* Directory */}
+      <h3 className="pixel" style={{ marginTop: 12 }}>
+        ✉ DIRECTORY
+      </h3>
+      <p
+        className="tiny pixel"
+        style={{ color: "var(--c-dark)", marginTop: -4 }}
+      >
+        TAP TO MESSAGE A NEIGHBOR
+      </p>
+      <div className="stack-sm">
+        {DIRECTORY.map((p) => (
+          <DirectoryRow
+            key={p.name}
+            person={p}
+            onMessage={() => setMessageTo(p)}
+          />
+        ))}
+      </div>
+
+      <div style={{ height: 12 }} />
+
+      {messageTo && (
+        <MessageDialog
+          person={messageTo}
+          onClose={() => setMessageTo(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function LeaderRow({ entry }) {
+  // Muted card backgrounds per rank — softer than the bright chip colors
+  const cardStyles = {
+    1: "#e8d8a8", // dusty gold
+    2: "#c5d4be", // muted sage
+    3: "#dec5b8", // dusty peach
+  };
+  const rankColors = {
+    1: "#c79a3a",
+    2: "#7a9a6b",
+    3: "#a06b54",
+  };
+  const bg = cardStyles[entry.rank] || cardStyles[3];
+  const garden = entry.garden || [];
+  return (
+    <div
+      className="card"
+      style={{
+        padding: 8,
+        background: bg,
+        borderColor: "transparent",
+        boxShadow: "none",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 4,
+        }}
+      >
+        <div
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 999,
+            background: rankColors[entry.rank] || "var(--c-cream)",
+            color: "var(--c-darkest)",
+            fontWeight: 800,
+            fontSize: 13,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            border: "2px solid var(--c-darkest)",
+          }}
+        >
+          {entry.rank}
+        </div>
+        <p
+          className="body"
+          style={{
+            fontWeight: 700,
+            color: "var(--c-darkest)",
+            fontSize: 12,
+            textAlign: "center",
+            lineHeight: 1.1,
+          }}
+        >
+          {entry.name}
+        </p>
+        <p
+          className="tiny pixel"
+          style={{
+            color: "var(--c-dark)",
+            fontSize: 8,
+            letterSpacing: 0.3,
+          }}
+        >
+          {entry.plants}P · ${entry.value.toFixed(0)}
+        </p>
+      </div>
+
+      {garden.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <div className="tiny-pot-grid">
+            {garden.map((p) => (
+              <div key={p.id} className="pot">
+                <div
+                  className={
+                    "pot-plant" +
+                    (valueStageIdx(p.value) < 2 ? " is-sprout" : "")
+                  }
+                >
+                  <img
+                    src={plantGif(p, 0)}
+                    alt=""
+                    draggable={false}
+                    style={
+                      p.hue
+                        ? { filter: `hue-rotate(${p.hue}deg)` }
+                        : undefined
+                    }
+                  />
+                </div>
+                <div className="pot-rim" />
+                <div className="pot-body" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DirectoryRow({ person, onMessage }) {
+  return (
+    <div className="card" style={{ padding: 12 }}>
+      <div className="row" style={{ gap: 12, alignItems: "center" }}>
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <img
+            src={`/animations/${person.flower}1.gif`}
+            alt=""
+            draggable={false}
+            style={{
+              maxHeight: 40,
+              maxWidth: 40,
+              imageRendering: "pixelated",
+              filter: person.hue
+                ? `hue-rotate(${person.hue}deg)`
+                : undefined,
+            }}
+          />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p
+            className="body"
+            style={{ fontWeight: 700, color: "var(--c-darkest)" }}
+          >
+            {person.name}
+          </p>
+          <p
+            className="tiny pixel"
+            style={{ color: "var(--c-dark)", marginTop: 2 }}
+          >
+            {person.role}
+          </p>
+        </div>
+        <button
+          className="btn small"
+          style={{ flexShrink: 0 }}
+          onClick={onMessage}
+        >
+          ✉ MESSAGE
+        </button>
+      </div>
+      <p
+        className="body"
+        style={{ color: "var(--c-dark)", marginTop: 8, fontSize: 13 }}
+      >
+        → {person.blurb}
+      </p>
+    </div>
+  );
+}
+
+function MessageDialog({ person, onClose }) {
+  const [text, setText] = useState("");
+  const [sent, setSent] = useState(false);
+  const valid = text.trim().length > 0;
+  const send = () => {
+    if (!valid) return;
+    setSent(true);
+  };
+  return (
+    <div className="dialog-bg" onClick={onClose}>
+      <div className="card stack" onClick={(e) => e.stopPropagation()}>
+        <div className="row between">
+          <div className="row" style={{ gap: 10, alignItems: "center" }}>
+            <img
+              src={`/animations/${person.flower}1.gif`}
+              alt=""
+              draggable={false}
+              style={{
+                width: 36,
+                height: 36,
+                imageRendering: "pixelated",
+                filter: person.hue
+                  ? `hue-rotate(${person.hue}deg)`
+                  : undefined,
+              }}
+            />
+            <div>
+              <h2 className="pixel">{person.name}</h2>
+              <p
+                className="tiny pixel"
+                style={{ color: "var(--c-dark)", marginTop: 2 }}
+              >
+                {person.role}
+              </p>
+            </div>
+          </div>
+          <button className="btn secondary small" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        {!sent ? (
+          <>
+            <div>
+              <label className="input-label">YOUR MESSAGE</label>
+              <textarea
+                className="input"
+                placeholder={`Say hi to ${person.name.split(" ")[0]}…`}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={4}
+                style={{
+                  resize: "none",
+                  fontFamily: "inherit",
+                  lineHeight: 1.5,
+                }}
+                autoFocus
+              />
+            </div>
+            <div className="row" style={{ gap: 8 }}>
+              <button
+                className="btn secondary full small"
+                onClick={onClose}
+              >
+                CANCEL
+              </button>
+              <button
+                className="btn full"
+                onClick={send}
+                disabled={!valid}
+              >
+                SEND ▸
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div
+              className="card"
+              style={{
+                background: "var(--c-mid-light)",
+                padding: 14,
+                textAlign: "center",
+              }}
+            >
+              <p
+                className="pixel"
+                style={{
+                  color: "var(--c-darkest)",
+                  fontSize: 18,
+                }}
+              >
+                ✓ SENT
+              </p>
+              <p
+                className="body"
+                style={{ marginTop: 6, color: "var(--c-dark)" }}
+              >
+                {person.name.split(" ")[0]} will get back to you soon.
+              </p>
+            </div>
+            <button className="btn full" onClick={onClose}>
+              DONE
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -2362,7 +2862,17 @@ function Achievement({ done, label }) {
   );
 }
 
-function PlantDialog({ plant, years, proj, stageLabel, gif, hue, onWater, onClose }) {
+function PlantDialog({
+  plant,
+  years,
+  proj,
+  stageLabel,
+  gif,
+  hue,
+  nextStage,
+  onWater,
+  onClose,
+}) {
   const [pouring, setPouring] = useState(false);
   const [pop, setPop] = useState(null); // "+5", "+10" etc
   const WATER_AMOUNT = 5;
@@ -2503,6 +3013,68 @@ function PlantDialog({ plant, years, proj, stageLabel, gif, hue, onWater, onClos
               <b>{stageLabel}</b>
             </span>
           </div>
+
+          {nextStage ? (
+            <div style={{ marginTop: 10 }}>
+              <div
+                className="row between"
+                style={{ marginBottom: 6 }}
+              >
+                <span className="tiny pixel" style={{ color: "var(--c-dark)" }}>
+                  Next: {nextStage.label}
+                </span>
+                <span className="tiny pixel" style={{ color: "var(--c-dark)" }}>
+                  ${nextStage.needed.toFixed(2)} to go
+                </span>
+              </div>
+              <div
+                style={{
+                  height: 8,
+                  borderRadius: 999,
+                  background: "rgba(45, 80, 22, 0.12)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${
+                      Math.max(
+                        0,
+                        Math.min(
+                          1,
+                          (plant.value - nextStage.fromThreshold) /
+                            (nextStage.threshold - nextStage.fromThreshold),
+                        ),
+                      ) * 100
+                    }%`,
+                    background:
+                      "linear-gradient(180deg, var(--c-mid-light) 0%, var(--c-mid) 100%)",
+                    borderRadius: 999,
+                    transition: "width 0.4s ease",
+                  }}
+                />
+              </div>
+              <p
+                className="tiny pixel"
+                style={{ color: "var(--c-dark)", marginTop: 6 }}
+              >
+                ${plant.value.toFixed(2)} / ${nextStage.threshold} for{" "}
+                {nextStage.label}
+              </p>
+            </div>
+          ) : (
+            <p
+              className="tiny pixel"
+              style={{
+                color: "var(--c-mid)",
+                marginTop: 10,
+                textAlign: "center",
+              }}
+            >
+              ★ MAX STAGE — FULL BLOOM
+            </p>
+          )}
         </div>
 
         <button className="btn full" onClick={water} disabled={pouring}>

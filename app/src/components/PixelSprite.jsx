@@ -224,6 +224,20 @@ export const ICONS = {
     "DDDDDDDDDDDD",
     "............",
   ],
+  community: [
+    "............",
+    "..DDD..DDD..",
+    ".DMLD..DMLD.",
+    ".DBLD..DBLD.",
+    "..DD....DD..",
+    "DDDDD..DDDDD",
+    "DMLLD..DMLLD",
+    "DLLLD..DLLLD",
+    "DDDDD..DDDDD",
+    "............",
+    "............",
+    "............",
+  ],
 };
 
 export const TweaksContext = createContext({

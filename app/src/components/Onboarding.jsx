@@ -14,7 +14,7 @@ export function Onboarding({ user, setUser, onDone }) {
 
   return (
     <div
-      className="screen screen-enter"
+      className="screen screen-enter narrow"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -342,18 +342,22 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
   const avg = answers.length ? score / answers.length : 0;
   let profile = "Moderate";
   let color = "var(--c-mid)";
+  let textColor = "var(--c-bg)";
   let desc = "";
   if (avg < 1.7) {
     profile = "Conservative";
     color = "var(--c-mid-light)";
+    textColor = "var(--c-darkest)";
     desc = "Steady ground. Lower swings, lower returns, fewer 3am cold sweats.";
   } else if (avg > 2.4) {
     profile = "Aggressive";
     color = "var(--c-dark)";
+    textColor = "var(--c-bg)";
     desc = "Mostly stocks. Bigger ups, bigger downs, longer time horizon.";
   } else {
     profile = "Moderate";
     color = "var(--c-mid)";
+    textColor = "var(--c-bg)";
     desc = "A balanced mix. The boring middle path — and it works.";
   }
 
@@ -374,14 +378,14 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
         <h2 className="pixel center">YOUR PROFILE</h2>
         <div
           className="card center quiz-pop"
-          style={{ background: color, color: "var(--c-bg)", padding: 24 }}
+          style={{ background: color, color: textColor, padding: 24 }}
         >
-          <h1 className="pixel" style={{ color: "var(--c-bg)", fontSize: 28 }}>
+          <h1 className="pixel" style={{ color: textColor, fontSize: 28 }}>
             {profile.toUpperCase()}
           </h1>
           <p
             className="body"
-            style={{ marginTop: 10, color: "var(--c-bg)", fontSize: 15 }}
+            style={{ marginTop: 10, color: textColor, fontSize: 15 }}
           >
             {desc}
           </p>

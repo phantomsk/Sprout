@@ -206,19 +206,19 @@
   font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "Inter",
     system-ui, sans-serif;
   font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.3px;
+  font-size: 9px;
+  letter-spacing: 0.2px;
   text-transform: uppercase;
   color: var(--c-dark);
 }
 .phone.soft .tab.active {
   color: var(--c-bg);
   background: linear-gradient(180deg, var(--c-mid) 0%, var(--c-dark) 100%);
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.18) inset,
     0 4px 12px rgba(45, 80, 22, 0.22);
-  margin: 8px 4px;
+  margin: 6px 2px;
 }
 
 .phone.soft .pbar {
@@ -395,7 +395,10 @@ body {
   .screen.narrow.pad,
   .screen.narrow .pad-h,
   .screen.narrow > .pad-h.pad-v {
-    max-width: 380px;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
   }
   /* Top nav on desktop instead of bottom tab bar */
   .tabbar {
@@ -412,9 +415,10 @@ body {
   }
   .phone.soft .tabbar .tab {
     flex-direction: row;
-    gap: 8px;
-    font-size: 11px;
-    letter-spacing: 0.3px;
+    gap: 6px;
+    font-size: 10px;
+    letter-spacing: 0.2px;
+    padding: 0 4px;
   }
   .screen.has-nav {
     top: 64px;
@@ -616,7 +620,7 @@ h3.pixel {
   background: var(--c-dark);
   border-top: var(--px) solid var(--c-darkest);
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   box-shadow: inset 0 var(--px) 0 var(--c-mid);
 }
 .tab {
@@ -632,6 +636,15 @@ h3.pixel {
   letter-spacing: 1px;
   border: none;
   background: transparent;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 2px;
+}
+.tab > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .tab.active {
   color: var(--c-bg);
@@ -914,6 +927,15 @@ input[type="range"].pix::-moz-range-thumb {
 .onboard-center .card {
   text-align: left;
 }
+/* On desktop, the whole onboarding column collapses to a focused width */
+@media (min-width: 768px) {
+  .onboard-center {
+    max-width: 660px;
+    width: 100%;
+    align-self: center;
+    box-sizing: border-box;
+  }
+}
 
 /* Quiz card pop transition between questions */
 @keyframes quizpop {
@@ -1091,6 +1113,41 @@ input[type="range"].pix::-moz-range-thumb {
 }
 .mini-pot-grid .pot-plant img {
   max-height: 36px;
+}
+
+/* 3 community gardens side by side, each with a wrapping pot grid */
+.community-leaders {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+/* Tiny pots inside each community leader card */
+.tiny-pot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 6px 2px 2px;
+  width: 100%;
+  justify-items: center;
+}
+.tiny-pot-grid .pot {
+  width: 100%;
+  max-width: 38px;
+}
+.tiny-pot-grid .pot-plant {
+  bottom: 38%;
+  width: 160%;
+}
+.tiny-pot-grid .pot-plant img {
+  max-height: 40px;
+}
+.tiny-pot-grid .pot-rim {
+  height: 14%;
+  bottom: 36%;
+}
+.tiny-pot-grid .pot-body {
+  width: 80%;
+  height: 40%;
 }
 
 /* ============ Rain clouds (above the dirt row) ============ */
