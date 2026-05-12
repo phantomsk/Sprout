@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { SourceRow, newSource, toMonthly } from "./IncomeSource";
 import {
   PixelSprite,
@@ -1014,6 +1015,8 @@ function ScanDialog({ onClose, onSave }) {
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const handleFile = (e) => {
     const f = e.target.files?.[0];
@@ -1060,7 +1063,8 @@ function ScanDialog({ onClose, onSave }) {
     onClose();
   };
 
-  return (
+  if (!mounted) return null;
+  return createPortal(
     <div className="dialog-bg" onClick={onClose}>
       <div className="card stack" onClick={(e) => e.stopPropagation()}>
         <div className="row between">
@@ -1238,7 +1242,8 @@ function ScanDialog({ onClose, onSave }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -2264,11 +2269,14 @@ function PicksInfoDialog({ user, onClose }) {
 
 function InvestConfirm({ pick, onCancel, onPlant }) {
   const [amt, setAmt] = useState(25);
+  const [mounted, setMounted] = useState(false);
   const info = PICK_INFO[pick.sym] || {};
   const flower = info.flower || "rose";
   const hue = info.hue || 0;
   const matureGif = `/animations/${flower}1.gif`;
-  return (
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return createPortal(
     <div className="dialog-bg" onClick={onCancel}>
       <div
         className="card stack"
@@ -2365,7 +2373,8 @@ function InvestConfirm({ pick, onCancel, onPlant }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
