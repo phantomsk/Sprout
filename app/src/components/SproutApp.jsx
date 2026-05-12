@@ -48,7 +48,14 @@ export function SproutApp() {
       setUser((u) => ({
         ...u,
         plants: [
-          { id: 1, type: "sprout", value: 1, weeks: 0, label: u.plantName },
+          {
+            id: 1,
+            type: "sprout",
+            value: 1,
+            weeks: 0,
+            label: u.plantName,
+            flowerType: "rose",
+          },
         ],
       }));
     }

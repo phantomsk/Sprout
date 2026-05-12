@@ -919,6 +919,802 @@ input[type="range"].pix::-moz-range-thumb {
   justify-content: center;
 }
 
+/* ============ Pot (Garden + Home) ============ */
+.pot-grid {
+  display: grid;
+  gap: 12px 10px;
+  padding-top: 44px; /* breathing room for plants growing above pots */
+  position: relative;
+}
+.pot {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.pot:hover {
+  transform: translateY(-3px);
+  z-index: 6;
+}
+.pot.empty {
+  cursor: default;
+}
+.pot.empty:hover {
+  transform: none;
+}
+.pot-rim {
+  position: absolute;
+  bottom: 38%;
+  left: 6%;
+  right: 6%;
+  height: 11%;
+  background: linear-gradient(
+    180deg,
+    #d68b66 0%,
+    #b86d4a 55%,
+    #8c4f33 100%
+  );
+  border-radius: 5px 5px 3px 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 2px 3px rgba(15, 36, 16, 0.22);
+  z-index: 3;
+}
+.pot-body {
+  width: 78%;
+  height: 42%;
+  background: linear-gradient(
+    180deg,
+    #c47a55 0%,
+    #a35e3d 50%,
+    #7a4329 100%
+  );
+  clip-path: polygon(8% 0%, 92% 0%, 80% 100%, 20% 100%);
+  box-shadow:
+    inset -5px 0 8px rgba(0, 0, 0, 0.16),
+    inset 4px 0 6px rgba(255, 255, 255, 0.05);
+  position: relative;
+  z-index: 2;
+}
+.pot-body::after {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  top: 22%;
+  height: 5%;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  filter: blur(1px);
+}
+.pot-plant {
+  position: absolute;
+  bottom: 32%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+/* sprout sprite has more empty space at the top — drop it lower so it
+   tucks into the pot rim like the rose/sun sprites do */
+.pot-plant.is-sprout {
+  bottom: 18%;
+}
+.pot-plant img {
+  display: block;
+  max-width: 100%;
+  max-height: 180px;
+  image-rendering: pixelated;
+}
+.pot.empty .pot-body {
+  background: linear-gradient(
+    180deg,
+    rgba(196, 122, 85, 0.4) 0%,
+    rgba(122, 67, 41, 0.4) 100%
+  );
+}
+.pot.empty .pot-rim {
+  background: linear-gradient(
+    180deg,
+    rgba(214, 139, 102, 0.4) 0%,
+    rgba(140, 79, 51, 0.4) 100%
+  );
+  box-shadow: none;
+}
+
+/* Mini pot for the Home page widget (smaller, tighter) */
+.mini-pot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px 6px;
+  padding-top: 26px;
+  width: 100%;
+}
+.mini-pot-grid .pot-plant {
+  bottom: 42%;
+  width: 100%;
+}
+.mini-pot-grid .pot-plant img {
+  max-height: 36px;
+}
+
+/* ============ Rain clouds (above the dirt row) ============ */
+.rain-sky {
+  position: relative;
+  height: 60px;
+  margin-bottom: -30px; /* clouds overlap with the row a bit */
+  pointer-events: none;
+}
+.rain-cloud {
+  position: absolute;
+  top: 6px;
+  background: #eef2f6;
+  border-radius: 999px;
+  box-shadow:
+    -10px 6px 0 #eef2f6,
+    10px 6px 0 #eef2f6,
+    -16px -2px 0 #eef2f6,
+    16px -2px 0 #eef2f6,
+    0 -10px 0 #eef2f6,
+    0 6px 14px rgba(15, 36, 16, 0.18);
+}
+.rain-cloud.c1 {
+  left: 8%;
+  width: 38px;
+  height: 16px;
+}
+.rain-cloud.c2 {
+  left: 42%;
+  width: 46px;
+  height: 18px;
+  top: 14px;
+}
+.rain-cloud.c3 {
+  right: 12%;
+  width: 36px;
+  height: 16px;
+  top: 4px;
+}
+.rain-drop {
+  position: absolute;
+  width: 2px;
+  height: 9px;
+  background: linear-gradient(180deg, transparent, #6fb1e6 35%, #4a92cf);
+  border-radius: 1px;
+  animation: rain-fall 1.2s linear infinite;
+  opacity: 0;
+}
+@keyframes rain-fall {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.85;
+  }
+  80% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(70px);
+    opacity: 0;
+  }
+}
+
+/* ============ Plant tooltip (below the pot, cute) ============ */
+.plant-tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--c-cream);
+  color: var(--c-darkest);
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 20;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 6px 18px rgba(15, 36, 16, 0.18),
+    0 0 0 1px rgba(45, 80, 22, 0.12);
+  animation: tooltip-pop 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.plant-tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: var(--c-cream);
+}
+.plant-tooltip .ttl {
+  font-weight: 800;
+  color: var(--c-dark);
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.plant-tooltip .ttl::before {
+  content: "🌱";
+  font-size: 12px;
+}
+.plant-tooltip .sub {
+  color: var(--c-mid);
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+@keyframes tooltip-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+/* ============ Watering can + droplets ============ */
+.watering-stage {
+  position: relative;
+  height: 220px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+}
+.watering-can {
+  position: absolute;
+  top: 8px;
+  right: 18%;
+  width: 86px;
+  z-index: 3;
+  transform-origin: 80% 80%;
+  transition: transform 0.4s ease;
+}
+.watering-can.pour {
+  animation: can-pour 1.6s ease-in-out forwards;
+}
+@keyframes can-pour {
+  0% {
+    transform: translate(60px, -40px) rotate(20deg);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  35% {
+    transform: translate(0, 0) rotate(-35deg);
+  }
+  80% {
+    transform: translate(0, 0) rotate(-35deg);
+  }
+  100% {
+    transform: translate(40px, -30px) rotate(0deg);
+    opacity: 0;
+  }
+}
+.water-drop {
+  position: absolute;
+  width: 6px;
+  height: 10px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: linear-gradient(180deg, #9bd9ff 0%, #5aa9e8 100%);
+  box-shadow: 0 0 4px rgba(90, 169, 232, 0.6);
+  opacity: 0;
+  z-index: 2;
+}
+.watering-can.pour ~ .water-drop {
+  animation: drop-fall 0.7s ease-in infinite;
+}
+@keyframes drop-fall {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.95;
+  }
+  90% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(120px) scale(0.6);
+    opacity: 0;
+  }
+}
+.water-pop {
+  position: absolute;
+  bottom: 24%;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--c-mid);
+  text-shadow: 0 2px 6px rgba(45, 80, 22, 0.3);
+  pointer-events: none;
+  animation: water-pop 1.2s ease-out forwards;
+  z-index: 4;
+}
+@keyframes water-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.6);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50px) scale(1);
+  }
+}
+
+/* ============ Pixel-art book (Invest → LEARN popout) ============ */
+.book {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100% - 20px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #c47a55 0%, #8b4a2e 100%);
+  border: 3px solid #3d2715;
+  border-radius: 4px;
+  padding: 14px 14px 14px 22px;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 220, 180, 0.18),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.28),
+    0 18px 50px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+  animation: book-popout 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.book::before {
+  /* book spine binding */
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  bottom: 6px;
+  width: 8px;
+  background: repeating-linear-gradient(
+    180deg,
+    #3d2715 0 6px,
+    #6b3e26 6px 12px
+  );
+  border-radius: 2px;
+  box-shadow:
+    inset 1px 0 0 rgba(0, 0, 0, 0.4),
+    1px 0 0 rgba(0, 0, 0, 0.2);
+}
+.book-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 8px;
+}
+.book-hd b {
+  color: #fce8c6;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+.book-x {
+  appearance: none;
+  border: 2px solid #3d2715;
+  background: #f4ecd0;
+  color: #3d2715;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  border-radius: 2px;
+  box-shadow: 0 2px 0 #3d2715;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.book-x:hover {
+  background: #fff4d6;
+}
+.book-x:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 #3d2715;
+}
+.book-page {
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(139, 74, 46, 0.06) 0 28px,
+      transparent 28px 30px
+    ),
+    linear-gradient(180deg, #fdf6dd 0%, #f4ecd0 100%);
+  border: 2px solid #3d2715;
+  border-radius: 2px;
+  padding: 18px 18px 14px;
+  min-height: 280px;
+  position: relative;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 1px 0 0 rgba(0, 0, 0, 0.08);
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(61, 39, 21, 0.3) transparent;
+}
+.book-page::-webkit-scrollbar {
+  width: 6px;
+}
+.book-page::-webkit-scrollbar-thumb {
+  background: rgba(61, 39, 21, 0.3);
+  border-radius: 3px;
+}
+.book-page::after {
+  /* dog-ear pixel corner */
+  content: "";
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 14px;
+  height: 14px;
+  background:
+    linear-gradient(135deg, transparent 50%, #c47a55 50%);
+  border-right: 2px solid #3d2715;
+  border-bottom: 2px solid #3d2715;
+}
+.book-page-hd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1.5px dashed rgba(61, 39, 21, 0.3);
+}
+.book-page-hd .icon {
+  font-size: 18px;
+  color: #6b3e26;
+}
+.book-page-hd h3 {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  color: #3d2715;
+  text-transform: uppercase;
+  margin: 0;
+}
+.book-page-sub {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 11px;
+  font-style: italic;
+  color: #6b3e26;
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+.book-item {
+  margin-top: 10px;
+}
+.book-item-name {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 12.5px;
+  color: #3d2715;
+  margin-bottom: 2px;
+}
+.book-item-desc {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #5a3b22;
+}
+.book-ft {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 0 4px;
+}
+.book-nav {
+  appearance: none;
+  border: 2px solid #3d2715;
+  background: #f4ecd0;
+  color: #3d2715;
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  border-radius: 2px;
+  box-shadow: 0 2px 0 #3d2715;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.book-nav:hover:not(:disabled) {
+  background: #fff4d6;
+}
+.book-nav:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 #3d2715;
+}
+.book-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.book-page-num {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #fce8c6;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+@keyframes book-popout {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(-6deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04) rotate(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+/* Quiz pieces inside the book */
+.book-quiz-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.book-quiz-progress-track {
+  flex: 1;
+  height: 10px;
+  background: rgba(61, 39, 21, 0.12);
+  border: 1.5px solid #3d2715;
+  border-radius: 999px;
+  overflow: hidden;
+  padding: 1px;
+}
+.book-quiz-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #d68b66 0%, #8b4a2e 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 220, 180, 0.35);
+  transition: width 0.3s ease;
+}
+.book-quiz-progress-count {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #3d2715;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+.book-quiz-q {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #3d2715;
+  line-height: 1.4;
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+.book-quiz-meta {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: #6b3e26;
+  display: inline-block;
+  background: rgba(139, 74, 46, 0.12);
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid rgba(61, 39, 21, 0.2);
+}
+.book-quiz-choices {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  grid-template-columns: 1fr;
+}
+.book-quiz-choices.two {
+  grid-template-columns: 1fr 1fr;
+}
+.book-quiz-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3d2715;
+  background: #fff;
+  border: 2px solid #3d2715;
+  border-radius: 4px;
+  padding: 12px 12px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #3d2715;
+  transition: transform 0.05s ease, background 0.12s ease;
+  min-height: 48px;
+}
+.book-quiz-choices.two .book-quiz-choice {
+  justify-content: center;
+  text-align: center;
+  font-size: 14px;
+  padding: 18px 12px;
+}
+.book-quiz-letter {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: #fdf6dd;
+  border: 1.5px solid #3d2715;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 11px;
+  color: #3d2715;
+  letter-spacing: 0;
+}
+.book-quiz-choices.two .book-quiz-letter {
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+}
+.book-quiz-choice:hover:not(:disabled) {
+  background: #fdf6dd;
+}
+.book-quiz-choice:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 #3d2715;
+}
+.book-quiz-choice:disabled {
+  cursor: default;
+}
+.book-quiz-choice.correct {
+  background: #b8e0a0;
+  border-color: #2d5016;
+  box-shadow: 0 2px 0 #2d5016;
+  color: #1f3a1a;
+}
+.book-quiz-choice.correct .book-quiz-letter {
+  background: #2d5016;
+  border-color: #1f3a1a;
+  color: #fdf6dd;
+}
+.book-quiz-choice.wrong {
+  background: #f0a6a6;
+  border-color: #7a1f1f;
+  box-shadow: 0 2px 0 #7a1f1f;
+  color: #5a1414;
+}
+.book-quiz-choice.wrong .book-quiz-letter {
+  background: #7a1f1f;
+  border-color: #5a1414;
+  color: #fff0f0;
+}
+.book-quiz-mark {
+  margin-left: auto;
+  font-size: 16px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.book-quiz-question-block {
+  animation: quiz-fade-in 0.22s ease-out;
+}
+@keyframes quiz-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.book-quiz-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+  margin: 14px 0 10px;
+}
+.book-quiz-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: 1.5px solid #3d2715;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+.book-quiz-dot.ok {
+  background: #b8e0a0;
+  color: #1f3a1a;
+}
+.book-quiz-dot.bad {
+  background: #f0a6a6;
+  color: #5a1414;
+}
+.book-quiz-feedback {
+  margin-top: 12px;
+  padding: 10px;
+  border: 2px dashed rgba(61, 39, 21, 0.4);
+  border-radius: 3px;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #3d2715;
+  background: rgba(253, 246, 221, 0.6);
+}
+.book-quiz-cta {
+  display: inline-block;
+  margin-top: 12px;
+  appearance: none;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #fce8c6;
+  background: linear-gradient(180deg, #6b3e26 0%, #3d2715 100%);
+  border: 2px solid #3d2715;
+  border-radius: 3px;
+  padding: 10px 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #1d1208;
+}
+.book-quiz-cta:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+.book-quiz-cta:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 #1d1208;
+}
+.book-quiz-cta:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.book-quiz-score {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 32px;
+  color: #3d2715;
+  margin-top: 10px;
+}
+
 /* ============ Receipt scan animation ============ */
 @keyframes scanline {
   0% {

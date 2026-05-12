@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useContext } from "react";
+import { useState } from "react";
 import {
   PixelSprite,
   SPROUT_PIXELS,
   ICONS,
-  TweaksContext,
   randomTint,
 } from "./PixelSprite";
 
@@ -28,6 +27,33 @@ export function MainApp({ tab, setTab, user, setUser, onSignOut }) {
   );
 }
 
+function PageTitle({ src, alt }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <img
+        src={src}
+        alt={alt}
+        draggable={false}
+        style={{
+          display: "block",
+          width: 300,
+          height: 200,
+          objectFit: "contain",
+          imageRendering: "pixelated",
+          marginTop: -16,
+          marginBottom: -30,
+        }}
+      />
+    </div>
+  );
+}
+
 function TabBar({ tab, setTab }) {
   const items = [
     { k: "home", label: "HOME", ico: ICONS.home },
@@ -47,6 +73,43 @@ function TabBar({ tab, setTab }) {
           <PixelSprite pixels={i.ico} scale={2} bob={false} />
           <span>{i.label}</span>
         </button>
+      ))}
+    </div>
+  );
+}
+
+function MiniGardenPreview({ plants }) {
+  // 4 columns × 2 rows of small pots — fills extras with empties so the
+  // widget always feels like a tiny garden, even with one plant.
+  const COLS = 4;
+  const MIN_ROWS = 2;
+  const totalSlots = Math.max(
+    COLS * MIN_ROWS,
+    Math.ceil(plants.length / COLS) * COLS,
+  );
+  const slots = Array.from(
+    { length: totalSlots },
+    (_, i) => plants[i] || null,
+  );
+  return (
+    <div className="mini-pot-grid">
+      {slots.map((p, i) => (
+        <div key={p ? p.id : `e-${i}`} className={"pot" + (p ? "" : " empty")}>
+          {p && (
+            <div className="pot-plant is-sprout">
+              <img
+                src={plantGif(p, 0)}
+                alt={p.label || "plant"}
+                draggable={false}
+                style={
+                  p.hue ? { filter: `hue-rotate(${p.hue}deg)` } : undefined
+                }
+              />
+            </div>
+          )}
+          <div className="pot-rim" />
+          <div className="pot-body" />
+        </div>
       ))}
     </div>
   );
@@ -179,10 +242,15 @@ function HomeTab({ user, setUser, setTab }) {
             <p className="tiny pixel" style={{ color: "var(--c-bg)", marginBottom: 8 }}>
               GARDEN
             </p>
-            <div style={{ display: "flex", gap: 6, justifyContent: "center", flex: 1, alignItems: "center" }}>
-              <PixelSprite pixels={SPROUT_PIXELS.sprout} scale={3} />
-              <PixelSprite pixels={SPROUT_PIXELS.seed} scale={3} />
-              <PixelSprite pixels={SPROUT_PIXELS.seed} scale={3} bob={false} />
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <MiniGardenPreview plants={user.plants} />
             </div>
             <p className="tiny pixel" style={{ color: "var(--c-bg)", marginTop: 6, textAlign: "center" }}>
               {user.plants.length} PLANT{user.plants.length !== 1 ? "S" : ""} · ${totalInvested.toFixed(2)}
@@ -432,7 +500,7 @@ function BudgetTab({ user, setUser }) {
 
   return (
     <div className="screen-enter pad stack">
-      <h2 className="pixel">BUDGET</h2>
+      <PageTitle src="/animations/budget.png" alt="Budget" />
 
       <div className="card stack-sm">
         <h3 className="pixel">★ MAY</h3>
@@ -1153,29 +1221,43 @@ const LEARN_SECTIONS = [
   },
 ];
 
+// flower = which sprite (rose/sun); hue = CSS hue-rotate degrees so each stock
+// gets a visually distinct color even within the same flower family.
 const PICK_INFO = {
   BND: {
     type: "Bond ETF",
+    flower: "sun",
+    hue: 0, // classic yellow sun
     more: "Holds thousands of U.S. investment-grade bonds — both government and corporate. Bonds pay regular interest, so this gives you steady income. Lower long-term returns than stocks, but far less volatile.",
   },
   VTI: {
     type: "U.S. Stock ETF",
+    flower: "rose",
+    hue: 0, // classic red rose
     more: "Owns a slice of nearly every publicly traded U.S. company — from giants like Apple down to tiny ones. One ticker, very broad diversification across the U.S. market.",
   },
   VYM: {
     type: "Dividend ETF",
+    flower: "sun",
+    hue: 30, // warm orange sun
     more: "Focuses on established U.S. companies that consistently pay dividends. Tends to be less volatile than the broader market and produces cash flow you can reinvest or spend.",
   },
   VXUS: {
     type: "International Stock ETF",
+    flower: "rose",
+    hue: 60, // golden-yellow rose
     more: "Stocks from companies outside the U.S. — Europe, Japan, emerging markets, and more. Pairs nicely with VTI to round out exposure beyond just American companies.",
   },
   QQQ: {
     type: "Tech-Heavy ETF",
+    flower: "sun",
+    hue: 240, // electric-blue sun
     more: "Tracks the Nasdaq-100 — the largest non-financial companies on the Nasdaq, heavily weighted toward big tech (Apple, Microsoft, Nvidia, Google, Amazon). Bigger swings than a broad index.",
   },
   AVUV: {
     type: "Small-Cap Value ETF",
+    flower: "rose",
+    hue: 290, // pink-purple rose
     more: "Smaller U.S. companies trading at lower valuations. Historically rewarded over long timeframes, but bumpy in the short term.",
   },
 };
@@ -1183,7 +1265,7 @@ const PICK_INFO = {
 function InvestTab({ user, setUser }) {
   const [confirm, setConfirm] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
-  const [openIdx, setOpenIdx] = useState(null);
+  const [showBook, setShowBook] = useState(false);
   const [openPick, setOpenPick] = useState(null);
 
   const picks =
@@ -1206,6 +1288,7 @@ function InvestTab({ user, setUser }) {
     }[user.risk] || [];
 
   const plant = (p, amt) => {
+    const info = PICK_INFO[p.sym] || {};
     setUser((u) => ({
       ...u,
       plants: [
@@ -1217,6 +1300,8 @@ function InvestTab({ user, setUser }) {
           weeks: 0,
           label: p.sym,
           tint: randomTint(),
+          flowerType: info.flower || "rose",
+          hue: info.hue || 0,
         },
       ],
     }));
@@ -1225,7 +1310,7 @@ function InvestTab({ user, setUser }) {
 
   return (
     <div className="screen-enter pad stack">
-      <h2 className="pixel">INVEST</h2>
+      <PageTitle src="/animations/invest.png" alt="Invest" />
       <div className="card green stack-sm">
         <div className="row between">
           <div>
@@ -1245,25 +1330,52 @@ function InvestTab({ user, setUser }) {
 
       <div className="row between" style={{ marginTop: 4 }}>
         <h3 className="pixel">★ PICKS FOR YOU</h3>
-        <button
-          onClick={() => setShowInfo(true)}
-          aria-label="What are these picks?"
-          style={{
-            width: 22,
-            height: 22,
-            padding: 0,
-            border: "none",
-            borderRadius: 999,
-            background: "var(--c-mid)",
-            color: "var(--c-bg)",
-            cursor: "pointer",
-            fontSize: 12,
-            fontWeight: 700,
-            lineHeight: 1,
-          }}
-        >
-          ?
-        </button>
+        <div className="row" style={{ gap: 8 }}>
+          <button
+            onClick={() => setShowBook(true)}
+            aria-label="Open the field guide"
+            title="Field guide"
+            style={{
+              width: 26,
+              height: 26,
+              padding: 0,
+              border: "1.5px solid #3d2715",
+              borderRadius: 4,
+              background:
+                "linear-gradient(180deg, #c47a55 0%, #8b4a2e 100%)",
+              color: "#fce8c6",
+              cursor: "pointer",
+              fontSize: 14,
+              lineHeight: 1,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow:
+                "inset 0 1px 0 rgba(255, 220, 180, 0.25), 0 2px 0 #3d2715",
+            }}
+          >
+            📖
+          </button>
+          <button
+            onClick={() => setShowInfo(true)}
+            aria-label="What are these picks?"
+            style={{
+              width: 22,
+              height: 22,
+              padding: 0,
+              border: "none",
+              borderRadius: 999,
+              background: "var(--c-mid)",
+              color: "var(--c-bg)",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 700,
+              lineHeight: 1,
+            }}
+          >
+            ?
+          </button>
+        </div>
       </div>
       <div className="stack-sm">
         {picks.map((p) => {
@@ -1408,26 +1520,6 @@ function InvestTab({ user, setUser }) {
         </p>
       </div>
 
-      <h3 className="pixel" style={{ marginTop: 8 }}>
-        ▤ LEARN
-      </h3>
-      <p
-        className="body"
-        style={{ color: "var(--c-dark)", marginTop: -4 }}
-      >
-        A quick guide to account types and assets. Tap to expand.
-      </p>
-      <div className="stack-sm">
-        {LEARN_SECTIONS.map((s, i) => (
-          <LearnCard
-            key={s.title}
-            section={s}
-            open={openIdx === i}
-            onToggle={() => setOpenIdx((cur) => (cur === i ? null : i))}
-          />
-        ))}
-      </div>
-
       <div style={{ height: 12 }} />
 
       {confirm && (
@@ -1440,81 +1532,308 @@ function InvestTab({ user, setUser }) {
       {showInfo && (
         <PicksInfoDialog user={user} onClose={() => setShowInfo(false)} />
       )}
+      {showBook && <LearnBook onClose={() => setShowBook(false)} />}
     </div>
   );
 }
 
-function LearnCard({ section, open, onToggle }) {
+function LearnBook({ onClose }) {
+  const [page, setPage] = useState(0);
+  const numSections = LEARN_SECTIONS.length;
+  const QUIZ_PAGE = numSections; // last page is the quiz
+  const totalPages = numSections + 1;
+  const isQuiz = page === QUIZ_PAGE;
+
+  // Quiz state (lives in the book so it persists while you flip pages)
+  const [quiz, setQuiz] = useState(null);
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
+  const [quizError, setQuizError] = useState(null);
+  const [qIdx, setQIdx] = useState(0);
+  const [answers, setAnswers] = useState([]); // user's picked index per question
+  const [revealed, setRevealed] = useState(false); // show feedback for current Q
+
+  const generateQuiz = async () => {
+    setLoadingQuiz(true);
+    setQuizError(null);
+    try {
+      const res = await fetch("/api/quiz", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+      if (!data.questions?.length) throw new Error("No questions returned");
+      setQuiz(data);
+      setQIdx(0);
+      setAnswers([]);
+      setRevealed(false);
+    } catch (err) {
+      setQuizError(err.message || "Something went wrong");
+    } finally {
+      setLoadingQuiz(false);
+    }
+  };
+
+  const answerQuestion = (choice) => {
+    if (revealed) return;
+    setAnswers((a) => [...a, choice]);
+    setRevealed(true);
+  };
+  const nextQuestion = () => {
+    setRevealed(false);
+    setQIdx((i) => i + 1);
+  };
+  const resetQuiz = () => {
+    setQuiz(null);
+    setQIdx(0);
+    setAnswers([]);
+    setRevealed(false);
+    setQuizError(null);
+  };
+
+  const section = !isQuiz ? LEARN_SECTIONS[page] : null;
+  const quizDone = quiz && qIdx >= quiz.questions.length;
+  const currentQ = quiz && !quizDone ? quiz.questions[qIdx] : null;
+  const score = quiz
+    ? quiz.questions.reduce(
+        (s, q, i) => s + (answers[i] === q.correctIndex ? 1 : 0),
+        0,
+      )
+    : 0;
+
   return (
-    <div className="card" style={{ padding: 0 }}>
-      <button
-        onClick={onToggle}
-        style={{
-          background: "transparent",
-          border: "none",
-          padding: 14,
-          cursor: "pointer",
-          textAlign: "left",
-          width: "100%",
-          display: "block",
-        }}
-      >
-        <div className="row between" style={{ alignItems: "flex-start" }}>
-          <div className="row" style={{ gap: 10, alignItems: "flex-start" }}>
-            <span
-              className="pixel"
-              style={{ color: "var(--c-mid)", fontSize: 14, lineHeight: 1.4 }}
-            >
-              {section.icon}
-            </span>
-            <div>
-              <h3 className="pixel">{section.title}</h3>
-              <p
-                className="tiny pixel"
-                style={{ color: "var(--c-dark)", marginTop: 4 }}
-              >
-                {section.sub}
-              </p>
-            </div>
-          </div>
-          <span
-            aria-hidden="true"
-            style={{
-              color: "var(--c-dark)",
-              fontSize: 18,
-              fontWeight: 700,
-              lineHeight: 1,
-              marginTop: 2,
-            }}
+    <div className="dialog-bg" onClick={onClose}>
+      <div className="book" onClick={(e) => e.stopPropagation()}>
+        <div className="book-hd">
+          <b>★ Sprout Field Guide ★</b>
+          <button
+            className="book-x"
+            onClick={onClose}
+            aria-label="Close book"
           >
-            {open ? "−" : "+"}
+            ×
+          </button>
+        </div>
+
+        <div className="book-page" key={page + "-" + qIdx + "-" + (revealed ? "r" : "")}>
+          {!isQuiz && section && (
+            <>
+              <div className="book-page-hd">
+                <span className="icon">{section.icon}</span>
+                <h3>{section.title}</h3>
+              </div>
+              <p className="book-page-sub">{section.sub}</p>
+              {section.items.map((it) => (
+                <div key={it.name} className="book-item">
+                  <p className="book-item-name">{it.name}</p>
+                  <p className="book-item-desc">{it.desc}</p>
+                </div>
+              ))}
+            </>
+          )}
+
+          {isQuiz && (
+            <>
+              <div className="book-page-hd">
+                <span className="icon">✎</span>
+                <h3>Pop Quiz</h3>
+              </div>
+
+              {/* INTRO */}
+              {!quiz && !loadingQuiz && !quizError && (
+                <>
+                  <p className="book-page-sub">
+                    10 fresh questions to test what you just learned.
+                    Generated on the spot — no two quizzes are the same.
+                  </p>
+                  <button className="book-quiz-cta" onClick={generateQuiz}>
+                    Start Quiz ▸
+                  </button>
+                </>
+              )}
+
+              {/* LOADING */}
+              {loadingQuiz && (
+                <p
+                  className="book-page-sub shimmer"
+                  style={{ marginTop: 12 }}
+                >
+                  Sharpening pencils…
+                </p>
+              )}
+
+              {/* ERROR */}
+              {quizError && !loadingQuiz && (
+                <>
+                  <p
+                    className="book-page-sub"
+                    style={{ color: "#7a1f1f", fontStyle: "normal" }}
+                  >
+                    ♦ {quizError}
+                  </p>
+                  <button className="book-quiz-cta" onClick={generateQuiz}>
+                    Try Again
+                  </button>
+                </>
+              )}
+
+              {/* QUESTION */}
+              {currentQ && (
+                <div className="book-quiz-question-block">
+                  <div className="book-quiz-progress">
+                    <div className="book-quiz-progress-track">
+                      <div
+                        className="book-quiz-progress-fill"
+                        style={{
+                          width: `${
+                            ((qIdx + (revealed ? 1 : 0)) /
+                              quiz.questions.length) *
+                            100
+                          }%`,
+                        }}
+                      />
+                    </div>
+                    <span className="book-quiz-progress-count">
+                      {qIdx + 1}/{quiz.questions.length}
+                    </span>
+                  </div>
+
+                  {currentQ.source && (
+                    <span className="book-quiz-meta">{currentQ.source}</span>
+                  )}
+                  <p className="book-quiz-q">{currentQ.question}</p>
+
+                  <div
+                    className={
+                      "book-quiz-choices" +
+                      (currentQ.choices.length === 2 ? " two" : "")
+                    }
+                  >
+                    {currentQ.choices.map((c, i) => {
+                      const userPick = answers[qIdx];
+                      const isCorrect = i === currentQ.correctIndex;
+                      const isWrongPick = revealed && i === userPick && !isCorrect;
+                      let cls = "book-quiz-choice";
+                      if (revealed) {
+                        if (isCorrect) cls += " correct";
+                        else if (isWrongPick) cls += " wrong";
+                      }
+                      return (
+                        <button
+                          key={i}
+                          className={cls}
+                          disabled={revealed}
+                          onClick={() => answerQuestion(i)}
+                        >
+                          <span className="book-quiz-letter">
+                            {String.fromCharCode(65 + i)}
+                          </span>
+                          <span style={{ flex: 1 }}>{c}</span>
+                          {revealed && isCorrect && (
+                            <span className="book-quiz-mark">✓</span>
+                          )}
+                          {revealed && isWrongPick && (
+                            <span className="book-quiz-mark">✗</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {revealed && (
+                    <>
+                      <div className="book-quiz-feedback">
+                        <b>
+                          {answers[qIdx] === currentQ.correctIndex
+                            ? "✓ Correct!"
+                            : "✗ Not quite."}
+                        </b>{" "}
+                        {currentQ.explanation}
+                      </div>
+                      <button
+                        className="book-quiz-cta"
+                        onClick={nextQuestion}
+                      >
+                        {qIdx + 1 === quiz.questions.length
+                          ? "See Score ▸"
+                          : "Next ▸"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* DONE */}
+              {quizDone && (
+                <div className="book-quiz-question-block">
+                  <p className="book-page-sub">You finished — nice work!</p>
+                  <p className="book-quiz-score">
+                    {score} / {quiz.questions.length}
+                  </p>
+                  <p
+                    className="book-page-sub"
+                    style={{ marginTop: 4, marginBottom: 0 }}
+                  >
+                    {score === quiz.questions.length
+                      ? "Perfect run."
+                      : score >= 7
+                        ? "Solid grasp of the basics."
+                        : score >= 4
+                          ? "Worth flipping back through the pages."
+                          : "Re-read the guide and try again — no shame."}
+                  </p>
+                  <div className="book-quiz-dots">
+                    {quiz.questions.map((q, i) => {
+                      const ok = answers[i] === q.correctIndex;
+                      return (
+                        <span
+                          key={i}
+                          className={"book-quiz-dot " + (ok ? "ok" : "bad")}
+                          title={`Q${i + 1}: ${ok ? "Correct" : "Wrong"}`}
+                        >
+                          {ok ? "✓" : "✗"}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <button className="book-quiz-cta" onClick={generateQuiz}>
+                    New Quiz ↻
+                  </button>{" "}
+                  <button
+                    className="book-quiz-cta"
+                    onClick={resetQuiz}
+                    style={{
+                      background: "#fff",
+                      color: "#3d2715",
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="book-ft">
+          <button
+            className="book-nav"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+            aria-label="Previous page"
+          >
+            ◂
+          </button>
+          <span className="book-page-num">
+            {isQuiz ? "QUIZ" : `PAGE ${page + 1} / ${numSections}`}
           </span>
+          <button
+            className="book-nav"
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page === totalPages - 1}
+            aria-label="Next page"
+          >
+            ▸
+          </button>
         </div>
-      </button>
-      {open && (
-        <div
-          className="stack-sm"
-          style={{
-            padding: "0 14px 14px 14px",
-            borderTop: "1px solid rgba(45, 80, 22, 0.08)",
-            paddingTop: 12,
-          }}
-        >
-          {section.items.map((it) => (
-            <div key={it.name}>
-              <p
-                className="body"
-                style={{ fontWeight: 700, color: "var(--c-darkest)" }}
-              >
-                {it.name}
-              </p>
-              <p className="body" style={{ color: "var(--c-dark)" }}>
-                {it.desc}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -1558,8 +1877,10 @@ function PicksInfoDialog({ user, onClose }) {
 
 function InvestConfirm({ pick, onCancel, onPlant }) {
   const [amt, setAmt] = useState(25);
-  const plantType =
-    amt < 25 ? "seed" : amt < 100 ? "sprout" : amt < 500 ? "bud" : "bloom";
+  const info = PICK_INFO[pick.sym] || {};
+  const flower = info.flower || "rose";
+  const hue = info.hue || 0;
+  const matureGif = `/animations/${flower}1.gif`;
   return (
     <div className="dialog-bg" onClick={onCancel}>
       <div
@@ -1569,8 +1890,50 @@ function InvestConfirm({ pick, onCancel, onPlant }) {
       >
         <h2 className="pixel">PLANT {pick.sym}</h2>
 
-        <div className="center" style={{ padding: 8 }}>
-          <PixelSprite pixels={SPROUT_PIXELS[plantType]} scale={7} />
+        <div
+          style={{
+            background:
+              "linear-gradient(180deg, #ffffff 0%, var(--c-mid-light) 55%, var(--c-dark) 100%)",
+            borderRadius: 12,
+            padding: "16px 8px 12px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <div
+            className="pot"
+            style={{
+              width: 130,
+              cursor: "default",
+            }}
+          >
+            <div className="pot-plant" style={{ width: "95%" }}>
+              <img
+                src={matureGif}
+                alt={`${flower} preview`}
+                draggable={false}
+                style={{
+                  maxHeight: 96,
+                  ...(hue ? { filter: `hue-rotate(${hue}deg)` } : {}),
+                }}
+              />
+            </div>
+            <div className="pot-rim" />
+            <div className="pot-body" />
+          </div>
+          <p
+            className="tiny pixel"
+            style={{
+              color: "var(--c-bg)",
+              background: "rgba(15, 36, 16, 0.55)",
+              padding: "4px 10px",
+              borderRadius: 999,
+            }}
+          >
+            GROWS INTO YOUR {flower.toUpperCase()}
+          </p>
         </div>
 
         <div className="card" style={{ background: "var(--c-bg)", padding: 10 }}>
@@ -1619,10 +1982,62 @@ function InvestConfirm({ pick, onCancel, onPlant }) {
   );
 }
 
-function GardenTab({ user }) {
-  const tweaks = useContext(TweaksContext);
+// Map a plant + time-travel years to one of the user's animation gifs.
+// Stage progression:
+//   year 0       → sprout.gif
+//   year 1–4     → sprout2.gif
+//   year 5–9     → rose1.gif or sun1.gif (per plant)
+//   year 10+     → rose2.gif or sun2.gif (per plant)
+function plantGif(plant, yearsAhead) {
+  const flower =
+    plant.flowerType ||
+    ((Number(plant.id) || 0) % 2 === 0 ? "rose" : "sun");
+  if (yearsAhead >= 10) return `/animations/${flower}2.gif`;
+  if (yearsAhead >= 5) return `/animations/${flower}1.gif`;
+  if (yearsAhead >= 1) return `/animations/sprout2.gif`;
+  return `/animations/sprout.gif`;
+}
+
+function plantStageLabel(yearsAhead) {
+  if (yearsAhead >= 10) return "BLOOM";
+  if (yearsAhead >= 5) return "BUDDING";
+  if (yearsAhead >= 1) return "GROWING";
+  return "SPROUT";
+}
+
+function RainSky() {
+  // Three little clouds with staggered raindrops.
+  const drops = [
+    { left: "9%", delay: "0s" },
+    { left: "13%", delay: "0.4s" },
+    { left: "16%", delay: "0.7s" },
+    { left: "44%", delay: "0.1s" },
+    { left: "50%", delay: "0.5s" },
+    { left: "47%", delay: "0.85s" },
+    { left: "84%", delay: "0.25s" },
+    { left: "88%", delay: "0.6s" },
+    { left: "82%", delay: "0.9s" },
+  ];
+  return (
+    <div className="rain-sky">
+      <div className="rain-cloud c1" />
+      <div className="rain-cloud c2" />
+      <div className="rain-cloud c3" />
+      {drops.map((d, i) => (
+        <span
+          key={i}
+          className="rain-drop"
+          style={{ left: d.left, top: 28, animationDelay: d.delay }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function GardenTab({ user, setUser }) {
   const [yearsAhead, setYearsAhead] = useState(0);
   const [focused, setFocused] = useState(null);
+  const [hovered, setHovered] = useState(null);
 
   const growthRate =
     { Conservative: 0.05, Moderate: 0.07, Aggressive: 0.09 }[user.risk] || 0.07;
@@ -1634,81 +2049,103 @@ function GardenTab({ user }) {
     0
   );
 
-  const cols = 4;
-  const rows = 4;
-  const slots = Array.from(
-    { length: cols * rows },
-    (_, i) => user.plants[i] || null
-  );
-
-  const stageFor = (p) => {
-    if (!p) return null;
-    if (yearsAhead >= 10) return "tree";
-    if (yearsAhead >= 5) return "bloom";
-    if (yearsAhead >= 1) return "bud";
-    return p.type;
+  const waterPlant = (plantId, amount) => {
+    setUser((u) => ({
+      ...u,
+      plants: u.plants.map((p) =>
+        p.id === plantId ? { ...p, value: p.value + amount } : p
+      ),
+    }));
+    if (focused && focused.id === plantId) {
+      setFocused((f) => (f ? { ...f, value: f.value + amount } : f));
+    }
   };
 
   return (
     <div className="screen-enter pad stack">
-      <div className="row between">
-        <h2 className="pixel">GARDEN</h2>
-        <span className="chip gold">
-          {user.plants.length} PLANT{user.plants.length !== 1 ? "S" : ""}
-        </span>
-      </div>
+      <PageTitle src="/animations/garden.png" alt="Garden" />
 
-      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-        <div
+      <div
+        className="card"
+        style={{ padding: 0, overflow: "hidden", position: "relative" }}
+      >
+        <span
+          className="chip gold"
           style={{
-            background:
-              "linear-gradient(to bottom, var(--c-bg) 0%, var(--c-bg) 60%, var(--c-mid-light) 60%, var(--c-mid) 100%)",
-            padding: 12,
-            position: "relative",
+            position: "absolute",
+            top: 10,
+            right: 10,
+            zIndex: 5,
           }}
         >
+          {user.plants.length} PLANT{user.plants.length !== 1 ? "S" : ""}
+        </span>
+        <div
+          style={{
+            padding: "12px 14px 56px",
+            position: "relative",
+            background:
+              "linear-gradient(180deg, #ffffff 0%, var(--c-mid-light) 30%, var(--c-dark) 60%, var(--c-dark) 100%)",
+          }}
+        >
+          <RainSky />
           <div
-            className="cloud"
-            style={{ top: 8, left: 24, animationDuration: "20s" }}
-          />
-          <div
-            className="cloud"
+            className="pot-grid"
             style={{
-              top: 20,
-              left: 180,
-              animationDuration: "24s",
-              animationDelay: "-10s",
-            }}
-          />
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: 6,
-              marginTop: 28,
+              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
             }}
           >
-            {slots.map((p, i) => {
-              const stage = stageFor(p);
-              const tinted =
-                tweaks.variety &&
-                (stage === "bud" || stage === "bloom" || stage === "tree");
-              return (
+            {(() => {
+              const COLS = 4;
+              const ROWS = 2;
+              const totalSlots = COLS * ROWS;
+              const slots = Array.from(
+                { length: totalSlots },
+                (_, i) => user.plants[i] || null,
+              );
+              return slots.map((p, i) => (
                 <div
-                  key={i}
-                  className={"plot" + (p ? "" : " empty")}
+                  key={p ? p.id : `empty-${i}`}
+                  className={"pot" + (p ? "" : " empty")}
                   onClick={() => p && setFocused(p)}
+                  onMouseEnter={() => p && setHovered(p.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  role={p ? "button" : undefined}
+                  aria-label={p ? `${p.label} plant` : "empty pot"}
                 >
                   {p && (
-                    <PixelSprite
-                      pixels={SPROUT_PIXELS[stage] || SPROUT_PIXELS.sprout}
-                      scale={3.5}
-                      tint={tinted ? p.tint : null}
-                    />
+                    <div
+                      className={
+                        "pot-plant" + (yearsAhead < 5 ? " is-sprout" : "")
+                      }
+                    >
+                      <img
+                        src={plantGif(p, yearsAhead)}
+                        alt={`${p.label} ${plantStageLabel(yearsAhead)}`}
+                        draggable={false}
+                        style={
+                          p.hue
+                            ? { filter: `hue-rotate(${p.hue}deg)` }
+                            : undefined
+                        }
+                      />
+                    </div>
+                  )}
+                  <div className="pot-rim" />
+                  <div className="pot-body" />
+                  {p && hovered === p.id && (
+                    <div className="plant-tooltip">
+                      <div className="ttl">{p.label}</div>
+                      <div className="sub">
+                        ${p.value.toFixed(2)}
+                        {yearsAhead > 0 &&
+                          ` → $${projected(p.value).toFixed(2)} (+${yearsAhead}y)`}
+                      </div>
+                    </div>
                   )}
                 </div>
-              );
-            })}
+              ));
+            })()}
           </div>
         </div>
       </div>
@@ -1773,10 +2210,12 @@ function GardenTab({ user }) {
       {focused && (
         <PlantDialog
           plant={focused}
-          stage={stageFor(focused)}
           years={yearsAhead}
           proj={projected(focused.value)}
-          tint={tweaks.variety ? focused.tint : null}
+          stageLabel={plantStageLabel(yearsAhead)}
+          gif={plantGif(focused, yearsAhead)}
+          hue={focused.hue || 0}
+          onWater={(amt) => waterPlant(focused.id, amt)}
           onClose={() => setFocused(null)}
         />
       )}
@@ -1799,27 +2238,128 @@ function Achievement({ done, label }) {
   );
 }
 
-function PlantDialog({ plant, stage, years, proj, tint, onClose }) {
+function PlantDialog({ plant, years, proj, stageLabel, gif, hue, onWater, onClose }) {
+  const [pouring, setPouring] = useState(false);
+  const [pop, setPop] = useState(null); // "+5", "+10" etc
+  const WATER_AMOUNT = 5;
+
+  const water = () => {
+    if (pouring) return;
+    setPouring(true);
+    setPop(`+$${WATER_AMOUNT}`);
+    // value updates partway through so the number ticks while can pours
+    setTimeout(() => onWater?.(WATER_AMOUNT), 700);
+    setTimeout(() => {
+      setPouring(false);
+      setPop(null);
+    }, 1700);
+  };
+
   return (
     <div className="dialog-bg" onClick={onClose}>
-      <div
-        className="card stack"
-        style={{ width: "100%" }}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="card stack" onClick={(e) => e.stopPropagation()}>
         <div className="row between">
           <h2 className="pixel">{plant.label}</h2>
           <button className="btn secondary small" onClick={onClose}>
             ✕
           </button>
         </div>
-        <div className="center" style={{ padding: 8 }}>
-          <PixelSprite
-            pixels={SPROUT_PIXELS[stage] || SPROUT_PIXELS.sprout}
-            scale={9}
-            tint={tint}
-          />
+
+        <div
+          className="watering-stage"
+          style={{
+            background:
+              "linear-gradient(180deg, var(--c-bg) 0%, var(--c-bg) 60%, var(--c-mid-light) 60%, var(--c-mid) 100%)",
+            borderRadius: 12,
+          }}
+        >
+          {/* watering can */}
+          <svg
+            className={"watering-can" + (pouring ? " pour" : "")}
+            viewBox="0 0 100 70"
+            aria-hidden="true"
+          >
+            {/* spout */}
+            <path
+              d="M 60 22 L 92 8 L 96 4 L 100 4 L 100 12 L 96 16 L 64 30 Z"
+              fill="#8794a8"
+              stroke="#3d4858"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+            />
+            <ellipse cx="96" cy="8" rx="5" ry="3" fill="#5d6a7c" />
+            {/* body */}
+            <path
+              d="M 10 22 L 70 22 Q 74 22 74 26 L 70 60 Q 70 64 66 64 L 14 64 Q 10 64 10 60 Z"
+              fill="#a3b0c4"
+              stroke="#3d4858"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
+            {/* highlight */}
+            <path
+              d="M 16 28 L 24 28 L 22 56 L 14 56 Z"
+              fill="rgba(255,255,255,0.25)"
+            />
+            {/* handle */}
+            <path
+              d="M 40 22 Q 50 8 60 22"
+              stroke="#3d4858"
+              strokeWidth="3"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </svg>
+
+          {/* water droplets — only render while pouring */}
+          {pouring && (
+            <>
+              <span
+                className="water-drop"
+                style={{ top: 56, right: "12%", animationDelay: "0s" }}
+              />
+              <span
+                className="water-drop"
+                style={{ top: 56, right: "16%", animationDelay: "0.18s" }}
+              />
+              <span
+                className="water-drop"
+                style={{ top: 56, right: "9%", animationDelay: "0.34s" }}
+              />
+              <span
+                className="water-drop"
+                style={{ top: 56, right: "13%", animationDelay: "0.5s" }}
+              />
+            </>
+          )}
+
+          {/* the plant itself sitting in a pot */}
+          <div
+            className="pot"
+            style={{
+              width: 140,
+              cursor: "default",
+              marginBottom: 8,
+            }}
+          >
+            <div className="pot-plant" style={{ width: "95%" }}>
+              <img
+                src={gif}
+                alt={plant.label}
+                draggable={false}
+                style={{
+                  maxHeight: 90,
+                  ...(hue ? { filter: `hue-rotate(${hue}deg)` } : {}),
+                }}
+              />
+            </div>
+            <div className="pot-rim" />
+            <div className="pot-body" />
+          </div>
+
+          {pop && <div className="water-pop">{pop}</div>}
         </div>
+
         <div className="card" style={{ background: "var(--c-bg)" }}>
           <div className="row between">
             <span className="body">Planted</span>
@@ -1836,11 +2376,14 @@ function PlantDialog({ plant, stage, years, proj, tint, onClose }) {
           <div className="row between">
             <span className="body">Stage</span>
             <span className="body">
-              <b>{(stage || "sprout").toUpperCase()}</b>
+              <b>{stageLabel}</b>
             </span>
           </div>
         </div>
-        <button className="btn full">+ WATER (ADD $)</button>
+
+        <button className="btn full" onClick={water} disabled={pouring}>
+          {pouring ? "WATERING…" : `+ WATER (ADD $${WATER_AMOUNT})`}
+        </button>
       </div>
     </div>
   );
