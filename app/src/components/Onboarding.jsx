@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PixelSprite, SPROUT_PIXELS } from "./PixelSprite";
+import { CADENCE_RATES, toMonthly, newSource, SourceRow } from "./IncomeSource";
 
 export function Onboarding({ user, setUser, onDone }) {
   const [step, setStep] = useState(0);
@@ -112,30 +113,78 @@ function Welcome({ onNext }) {
 }
 
 function Snapshot({ user, setUser, onNext, onBack }) {
+  const [sources, setSources] = useState(() => [newSource()]);
   const [tip, setTip] = useState(null);
-  const tips = {
-    income:
-      "Take-home = what hits your bank after taxes. We use this to size your buckets.",
-    debt: "Cards, loans, anything that has interest. Optional.",
-    savings: "Cash sitting around. Roughly fine — round to the nearest hundred.",
+
+  const totalMonthly = sources
+    .filter((s) => s.active)
+    .reduce((sum, s) => sum + toMonthly(s.amount, s.cadence), 0);
+
+  const updateSource = (id, updated) =>
+    setSources((prev) => prev.map((s) => (s.id === id ? updated : s)));
+  const removeSource = (id) =>
+    setSources((prev) => prev.filter((s) => s.id !== id));
+  const addSource = () => setSources((prev) => [...prev, newSource()]);
+
+  const handleNext = () => {
+    setUser((u) => ({ ...u, incomeSources: sources, income: totalMonthly }));
+    onNext();
   };
+
   return (
-    <div className="pad stack">
-      <h2 className="pixel center">FINANCIAL SNAPSHOT</h2>
-      <p className="body center">
-        Rough numbers are fine. No judgment.
-      </p>
+    <div className="pad stack" style={{ overflowY: "auto" }}>
+      <h2 className="pixel center">MONEY SNAPSHOT</h2>
+      <p className="body center">Where does your money come from? Rough numbers are fine.</p>
+
+      <div className="stack-sm">
+        {sources.map((src) => (
+          <SourceRow
+            key={src.id}
+            source={src}
+            onChange={(updated) => updateSource(src.id, updated)}
+            onRemove={() => removeSource(src.id)}
+            canRemove={sources.length > 1}
+          />
+        ))}
+
+        <button
+          onClick={addSource}
+          style={{
+            width: "100%",
+            padding: "10px 16px",
+            border: "2px dashed rgba(45,80,22,0.3)",
+            borderRadius: 10,
+            background: "transparent",
+            color: "var(--c-mid)",
+            cursor: "pointer",
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: "inherit",
+            letterSpacing: "0.5px",
+          }}
+        >
+          + ADD INCOME SOURCE
+        </button>
+      </div>
+
+      {totalMonthly > 0 && (
+        <div
+          className="card"
+          style={{ background: "var(--c-mid)", padding: "10px 14px" }}
+        >
+          <div className="row between">
+            <span className="pixel" style={{ color: "var(--c-bg)", fontSize: 11 }}>
+              MONTHLY TOTAL
+            </span>
+            <span className="pixel" style={{ color: "var(--c-bg)", fontSize: 14 }}>
+              ${totalMonthly}
+            </span>
+          </div>
+        </div>
+      )}
 
       <Field
-        label="MONTHLY TAKE-HOME"
-        infoKey="income"
-        onInfo={setTip}
-        value={user.income}
-        onChange={(v) => setUser((u) => ({ ...u, income: v }))}
-        prefix="$"
-      />
-      <Field
-        label="DEBTS  (OPTIONAL)"
+        label="DEBTS (OPTIONAL)"
         infoKey="debt"
         onInfo={setTip}
         value={user.debt}
@@ -154,7 +203,7 @@ function Snapshot({ user, setUser, onNext, onBack }) {
       {tip && (
         <div className="card green" style={{ padding: 10 }}>
           <p className="body" style={{ color: "var(--c-bg)" }}>
-            ♦ {tips[tip]}
+            ♦ {tip === "debt" ? "Cards, loans, anything that has interest. Optional." : "Cash sitting around. Roughly fine — round to the nearest hundred."}
           </p>
         </div>
       )}
@@ -163,7 +212,7 @@ function Snapshot({ user, setUser, onNext, onBack }) {
         <button className="btn secondary" onClick={onBack}>
           ◂ BACK
         </button>
-        <button className="btn full" onClick={onNext}>
+        <button className="btn full" onClick={handleNext}>
           NEXT ▸
         </button>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SourceRow, newSource, toMonthly } from "./IncomeSource";
 import {
   PixelSprite,
   SPROUT_PIXELS,
@@ -444,6 +445,133 @@ function BucketRow({ color, label, pct, cap }) {
 }
 
 function BudgetTab({ user, setUser }) {
+  const [view, setView] = useState("budget");
+
+  return (
+    <div className="screen-enter" style={{ display: "flex", flexDirection: "column" }}>
+      <div className="pad" style={{ paddingBottom: 0, flexShrink: 0 }}>
+        <div className="row between" style={{ alignItems: "center", marginBottom: 4 }}>
+          <PageTitle src="/animations/budget.png" alt="Budget" />
+          <div
+            className="row"
+            style={{
+              gap: 3,
+              padding: 3,
+              background: "rgba(45, 80, 22, 0.08)",
+              border: "1px solid rgba(45, 80, 22, 0.12)",
+              borderRadius: 10,
+              flexShrink: 0,
+            }}
+          >
+            {["budget", "income"].map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                style={{
+                  padding: "7px 11px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  fontFamily: "inherit",
+                  letterSpacing: 0.4,
+                  borderRadius: 7,
+                  background: view === v ? "var(--c-dark)" : "transparent",
+                  color: view === v ? "var(--c-bg)" : "var(--c-dark)",
+                  transition: "background 0.15s, color 0.15s",
+                }}
+              >
+                {v.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {view === "budget" && <BudgetView user={user} setUser={setUser} />}
+      {view === "income" && <IncomeView user={user} setUser={setUser} />}
+    </div>
+  );
+}
+
+function IncomeView({ user, setUser }) {
+  const init = user.incomeSources?.length ? user.incomeSources : [newSource()];
+  const [sources, setSources] = useState(init);
+
+  const commit = (next) => {
+    setSources(next);
+    const total = next
+      .filter((s) => s.active)
+      .reduce((sum, s) => sum + toMonthly(s.amount, s.cadence), 0);
+    setUser((u) => ({ ...u, incomeSources: next, income: total }));
+  };
+
+  const update = (id, updated) => commit(sources.map((s) => (s.id === id ? updated : s)));
+  const remove = (id) => commit(sources.filter((s) => s.id !== id));
+  const add = () => commit([...sources, newSource()]);
+
+  const total = sources
+    .filter((s) => s.active)
+    .reduce((sum, s) => sum + toMonthly(s.amount, s.cadence), 0);
+
+  return (
+    <div className="pad stack" style={{ overflowY: "auto" }}>
+      <div
+        className="card"
+        style={{ background: "var(--c-mid)", padding: "10px 14px" }}
+      >
+        <div className="row between">
+          <span className="pixel" style={{ color: "var(--c-bg)", fontSize: 11 }}>
+            MONTHLY TOTAL
+          </span>
+          <span className="pixel" style={{ color: "var(--c-bg)", fontSize: 14 }}>
+            ${total}
+          </span>
+        </div>
+      </div>
+
+      <div className="stack-sm">
+        {sources.map((src) => (
+          <SourceRow
+            key={src.id}
+            source={src}
+            onChange={(updated) => update(src.id, updated)}
+            onRemove={() => remove(src.id)}
+            canRemove={sources.length > 1}
+          />
+        ))}
+        <button
+          onClick={add}
+          style={{
+            width: "100%",
+            padding: "10px 16px",
+            border: "2px dashed rgba(45,80,22,0.3)",
+            borderRadius: 10,
+            background: "transparent",
+            color: "var(--c-mid)",
+            cursor: "pointer",
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: "inherit",
+            letterSpacing: "0.5px",
+          }}
+        >
+          + ADD INCOME SOURCE
+        </button>
+      </div>
+
+      <div className="card" style={{ background: "var(--c-mid-light)", padding: 12 }}>
+        <p className="body" style={{ fontSize: 13 }}>
+          ♦ Changes update your budget splits instantly. Switch back to Budget to see the new numbers.
+        </p>
+      </div>
+
+      <div style={{ height: 12 }} />
+    </div>
+  );
+}
+
+function BudgetView({ user, setUser }) {
   const [showScan, setShowScan] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [filter, setFilter] = useState("ALL");
@@ -499,9 +627,7 @@ function BudgetTab({ user, setUser }) {
   };
 
   return (
-    <div className="screen-enter pad stack">
-      <PageTitle src="/animations/budget.png" alt="Budget" />
-
+    <div className="pad stack" style={{ overflowY: "auto" }}>
       <div className="card stack-sm">
         <h3 className="pixel">★ MAY</h3>
         <BucketPie splits={user.splits} income={user.income} />

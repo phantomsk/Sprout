@@ -11,6 +11,7 @@ export function SproutApp() {
   const [user, setUser] = useState({
     name: "",
     income: 3200,
+    incomeSources: [],
     debt: 0,
     savings: 600,
     risk: "Moderate",
