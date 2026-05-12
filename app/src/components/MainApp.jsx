@@ -1695,9 +1695,6 @@ function LearnBook({ onClose }) {
                     </span>
                   </div>
 
-                  {currentQ.source && (
-                    <span className="book-quiz-meta">{currentQ.source}</span>
-                  )}
                   <p className="book-quiz-q">{currentQ.question}</p>
 
                   <div
