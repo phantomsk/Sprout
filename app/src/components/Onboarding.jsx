@@ -88,7 +88,7 @@ export function Onboarding({ user, setUser, onDone }) {
 
 function Welcome({ onNext }) {
   return (
-    <div className="pad stack">
+    <div className="onboard-center stack">
       <div className="center">
         <PixelSprite pixels={SPROUT_PIXELS.seed} scale={8} />
       </div>
@@ -132,7 +132,7 @@ function Snapshot({ user, setUser, onNext, onBack }) {
   };
 
   return (
-    <div className="pad stack" style={{ overflowY: "auto" }}>
+    <div className="onboard-center stack" style={{ overflowY: "auto" }}>
       <h2 className="pixel center">MONEY SNAPSHOT</h2>
       <p className="body center">Where does your money come from? Rough numbers are fine.</p>
 
@@ -289,6 +289,7 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
   const questions = [
     {
       q: "When will you want this money?",
+      sprite: "seed",
       opts: [
         { t: "Within 2 years", s: 1 },
         { t: "3–7 years", s: 2 },
@@ -297,6 +298,7 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
     },
     {
       q: "Your portfolio drops 20% overnight. You:",
+      gif: "/animations/sprout.gif",
       opts: [
         { t: "Sell — get me out", s: 1 },
         { t: "Sweat, but hold", s: 2 },
@@ -305,6 +307,7 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
     },
     {
       q: "How much have you invested before?",
+      gif: "/animations/sprout2.gif",
       opts: [
         { t: "Zero. New here.", s: 1 },
         { t: "A bit — 401k maybe", s: 2 },
@@ -313,6 +316,7 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
     },
     {
       q: "What's the goal?",
+      gif: "/animations/sun1.gif",
       opts: [
         { t: "Emergency fund", s: 1 },
         { t: "House / car", s: 2 },
@@ -321,6 +325,7 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
     },
     {
       q: "Pick a vibe:",
+      gif: "/animations/rose1.gif",
       opts: [
         { t: "Slow & steady", s: 1 },
         { t: "Mostly chill, some spice", s: 2 },
@@ -331,6 +336,7 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
   const [qi, setQi] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [done, setDone] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
 
   const score = answers.reduce((a, b) => a + b, 0);
   const avg = answers.length ? score / answers.length : 0;
@@ -352,34 +358,30 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
   }
 
   const pick = (s) => {
+    setTransitioning(true);
     const a = [...answers, s];
     setAnswers(a);
-    if (qi < questions.length - 1) setQi(qi + 1);
-    else setDone(true);
+    setTimeout(() => {
+      if (qi < questions.length - 1) setQi(qi + 1);
+      else setDone(true);
+      setTransitioning(false);
+    }, 250);
   };
 
   if (done) {
     return (
-      <div
-        className="pad stack"
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-        }}
-      >
+      <div className="onboard-center stack">
         <h2 className="pixel center">YOUR PROFILE</h2>
         <div
-          className="card center"
-          style={{ background: color, color: "var(--c-bg)" }}
+          className="card center quiz-pop"
+          style={{ background: color, color: "var(--c-bg)", padding: 24 }}
         >
-          <h1 className="pixel" style={{ color: "var(--c-bg)" }}>
+          <h1 className="pixel" style={{ color: "var(--c-bg)", fontSize: 28 }}>
             {profile.toUpperCase()}
           </h1>
           <p
             className="body"
-            style={{ marginTop: 8, color: "var(--c-bg)", fontSize: 15 }}
+            style={{ marginTop: 10, color: "var(--c-bg)", fontSize: 15 }}
           >
             {desc}
           </p>
@@ -417,43 +419,160 @@ function RiskQuiz({ user, setUser, onNext, onBack }) {
   }
 
   const Q = questions[qi];
+  const progress = ((qi + 1) / questions.length) * 100;
+
   return (
-    <div
-      className="pad stack"
-      style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-      }}
-    >
-      <h2 className="pixel center">RISK + GOALS</h2>
-      <p className="tiny pixel center" style={{ color: "var(--c-dark)" }}>
-        QUESTION {qi + 1} / {questions.length}
-      </p>
-      <div className="card quiz-pop center" key={qi} style={{ padding: 20 }}>
+    <div className="onboard-center" style={{ gap: 16 }}>
+      <div style={{ textAlign: "center" }}>
+        <h2 className="pixel center" style={{ fontSize: 18, marginBottom: 10 }}>
+          RISK + GOALS
+        </h2>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              maxWidth: 200,
+              height: 8,
+              background: "rgba(45, 80, 22, 0.1)",
+              borderRadius: 999,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: `${progress}%`,
+                height: "100%",
+                background: "var(--c-mid)",
+                borderRadius: 999,
+                transition: "width 0.35s ease",
+              }}
+            />
+          </div>
+          <span className="tiny pixel" style={{ color: "var(--c-dark)" }}>
+            {qi + 1} / {questions.length}
+          </span>
+        </div>
+      </div>
+
+      <div
+        key={qi}
+        className="card quiz-pop"
+        style={{
+          padding: "28px 22px",
+          minHeight: 280,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          opacity: transitioning ? 0 : 1,
+          transform: transitioning ? "scale(0.95) translateY(6px)" : "scale(1) translateY(0)",
+          transition: "opacity 0.2s ease, transform 0.2s ease",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: 14,
+          }}
+        >
+          {Q.sprite ? (
+            <PixelSprite pixels={SPROUT_PIXELS[Q.sprite]} scale={5} />
+          ) : (
+            <img
+              src={Q.gif}
+              alt=""
+              draggable={false}
+              style={{
+                width: 72,
+                height: 72,
+                objectFit: "contain",
+                imageRendering: "pixelated",
+              }}
+            />
+          )}
+        </div>
         <h3
           className="pixel"
           style={{
-            marginBottom: 16,
+            fontSize: 16,
+            marginBottom: 20,
             color: "var(--c-dark)",
             textAlign: "center",
+            lineHeight: 1.4,
           }}
         >
           {Q.q}
         </h3>
-        <div className="stack-sm">
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {Q.opts.map((o, i) => (
             <button
               key={i}
-              className="btn full secondary"
               onClick={() => pick(o.s)}
+              style={{
+                width: "100%",
+                padding: "14px 18px",
+                border: "2px solid rgba(45, 80, 22, 0.15)",
+                borderRadius: 12,
+                background: "var(--c-bg)",
+                cursor: "pointer",
+                fontSize: 14,
+                fontWeight: 600,
+                fontFamily: "inherit",
+                color: "var(--c-darkest)",
+                textAlign: "left",
+                transition: "border-color 0.15s, background 0.15s, transform 0.1s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--c-mid)";
+                e.currentTarget.style.background = "var(--c-mid-light)";
+                e.currentTarget.style.transform = "translateX(4px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "rgba(45, 80, 22, 0.15)";
+                e.currentTarget.style.background = "var(--c-bg)";
+                e.currentTarget.style.transform = "translateX(0)";
+              }}
             >
               {o.t}
             </button>
           ))}
         </div>
       </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 8,
+          marginTop: 4,
+        }}
+      >
+        {questions.map((_, i) => (
+          <div
+            key={i}
+            style={{
+              width: i === qi ? 20 : 8,
+              height: 8,
+              borderRadius: 999,
+              background:
+                i < qi
+                  ? "var(--c-mid)"
+                  : i === qi
+                    ? "var(--c-dark)"
+                    : "rgba(45, 80, 22, 0.15)",
+              transition: "all 0.3s ease",
+            }}
+          />
+        ))}
+      </div>
+
       <div className="center">
         <button className="btn secondary small" onClick={onBack}>
           ◂ BACK
@@ -512,7 +631,7 @@ function BudgetSetup({ user, setUser, onNext, onBack }) {
     Math.abs(splits.save - 20);
 
   return (
-    <div className="pad stack">
+    <div className="onboard-center stack" style={{ overflowY: "auto" }}>
       <h2 className="pixel center">PAYCHECK SPLIT</h2>
       <p className="body center">
         We default to <b>50 / 30 / 20</b>. Drag to taste — gently.
@@ -624,7 +743,7 @@ function ConnectAccounts({ onNext, onBack }) {
   };
 
   return (
-    <div className="pad stack">
+    <div className="onboard-center stack">
       <h2 className="pixel center">CONNECT ACCOUNTS</h2>
       <p className="body center">
         Linking your bank lets us auto-sort transactions. Or skip — you can
@@ -693,7 +812,7 @@ function MeetPlant({ user, setUser, onNext, onBack }) {
 
   if (planted) {
     return (
-      <div className="pad stack">
+      <div className="onboard-center stack">
         <div className="center">
           <PixelSprite pixels={SPROUT_PIXELS.bud} scale={9} />
         </div>
@@ -710,7 +829,7 @@ function MeetPlant({ user, setUser, onNext, onBack }) {
   }
 
   return (
-    <div className="pad stack">
+    <div className="onboard-center stack">
       <h2 className="pixel center">MEET YOUR SPROUT</h2>
       <div className="center" style={{ padding: "12px 0" }}>
         <PixelSprite pixels={SPROUT_PIXELS.sprout} scale={8} />

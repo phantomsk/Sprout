@@ -83,6 +83,7 @@ export function SproutApp() {
         setUser((u) => ({ ...u, name: meta.full_name }));
       }
     } catch {}
+    setTab("home");
     setRoute("app");
   };
 
@@ -102,7 +103,7 @@ export function SproutApp() {
       <Onboarding
         user={user}
         setUser={setUser}
-        onDone={() => setRoute("app")}
+        onDone={() => { setTab("home"); setRoute("app"); }}
       />
     );
   else if (route === "app")

@@ -41,14 +41,11 @@ function PageTitle({ src, alt }) {
         src={src}
         alt={alt}
         draggable={false}
+        className="page-title-img"
         style={{
           display: "block",
-          width: 300,
-          height: 200,
           objectFit: "contain",
           imageRendering: "pixelated",
-          marginTop: -16,
-          marginBottom: -30,
         }}
       />
     </div>
@@ -448,43 +445,40 @@ function BudgetTab({ user, setUser }) {
   const [view, setView] = useState("budget");
 
   return (
-    <div className="screen-enter" style={{ display: "flex", flexDirection: "column" }}>
-      <div className="pad" style={{ paddingBottom: 0, flexShrink: 0 }}>
-        <div className="row between" style={{ alignItems: "center", marginBottom: 4 }}>
-          <PageTitle src="/animations/budget.png" alt="Budget" />
-          <div
-            className="row"
-            style={{
-              gap: 3,
-              padding: 3,
-              background: "rgba(45, 80, 22, 0.08)",
-              border: "1px solid rgba(45, 80, 22, 0.12)",
-              borderRadius: 10,
-              flexShrink: 0,
-            }}
-          >
-            {["budget", "income"].map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                style={{
-                  padding: "7px 11px",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  fontFamily: "inherit",
-                  letterSpacing: 0.4,
-                  borderRadius: 7,
-                  background: view === v ? "var(--c-dark)" : "transparent",
-                  color: view === v ? "var(--c-bg)" : "var(--c-dark)",
-                  transition: "background 0.15s, color 0.15s",
-                }}
-              >
-                {v.toUpperCase()}
-              </button>
-            ))}
-          </div>
+    <div className="screen-enter pad stack">
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <PageTitle src="/animations/budget.png" alt="Budget" />
+        <div
+          className="row"
+          style={{
+            gap: 3,
+            padding: 3,
+            background: "rgba(45, 80, 22, 0.08)",
+            border: "1px solid rgba(45, 80, 22, 0.12)",
+            borderRadius: 10,
+          }}
+        >
+          {["budget", "income"].map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              style={{
+                padding: "7px 14px",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 10,
+                fontWeight: 700,
+                fontFamily: "inherit",
+                letterSpacing: 0.4,
+                borderRadius: 7,
+                background: view === v ? "var(--c-dark)" : "transparent",
+                color: view === v ? "var(--c-bg)" : "var(--c-dark)",
+                transition: "background 0.15s, color 0.15s",
+              }}
+            >
+              {v.toUpperCase()}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -515,20 +509,30 @@ function IncomeView({ user, setUser }) {
     .reduce((sum, s) => sum + toMonthly(s.amount, s.cadence), 0);
 
   return (
-    <div className="pad stack" style={{ overflowY: "auto" }}>
-      <div
-        className="card"
-        style={{ background: "var(--c-mid)", padding: "10px 14px" }}
-      >
+    <div className="stack">
+      <div className="card green stack-sm">
         <div className="row between">
-          <span className="pixel" style={{ color: "var(--c-bg)", fontSize: 11 }}>
-            MONTHLY TOTAL
-          </span>
-          <span className="pixel" style={{ color: "var(--c-bg)", fontSize: 14 }}>
-            ${total}
+          <div>
+            <h3 className="pixel" style={{ color: "var(--c-bg)" }}>
+              ★ MONTHLY INCOME
+            </h3>
+            <p
+              className="body"
+              style={{ color: "var(--c-bg)", fontSize: 18, fontWeight: 700, marginTop: 4 }}
+            >
+              ${total}
+            </p>
+          </div>
+          <span
+            className="chip"
+            style={{ background: "rgba(255,255,255,0.2)", color: "var(--c-bg)" }}
+          >
+            {sources.filter((s) => s.active).length} SOURCE{sources.filter((s) => s.active).length !== 1 ? "S" : ""}
           </span>
         </div>
       </div>
+
+      <h3 className="pixel">★ SOURCES</h3>
 
       <div className="stack-sm">
         {sources.map((src) => (
@@ -560,8 +564,8 @@ function IncomeView({ user, setUser }) {
         </button>
       </div>
 
-      <div className="card" style={{ background: "var(--c-mid-light)", padding: 12 }}>
-        <p className="body" style={{ fontSize: 13 }}>
+      <div className="card" style={{ background: "var(--c-mid-light)" }}>
+        <p className="body">
           ♦ Changes update your budget splits instantly. Switch back to Budget to see the new numbers.
         </p>
       </div>
@@ -627,7 +631,7 @@ function BudgetView({ user, setUser }) {
   };
 
   return (
-    <div className="pad stack" style={{ overflowY: "auto" }}>
+    <div className="stack">
       <div className="card stack-sm">
         <h3 className="pixel">★ MAY</h3>
         <BucketPie splits={user.splits} income={user.income} />
@@ -769,10 +773,7 @@ function BucketPie({ splits, income }) {
   let cum = -Math.PI / 2;
 
   return (
-    <div
-      className="row"
-      style={{ gap: 16, alignItems: "center", marginTop: 4 }}
-    >
+    <div className="bucket-pie-layout">
       <svg
         width={size}
         height={size}
@@ -1053,7 +1054,7 @@ function ScanDialog({ onClose, onSave }) {
                   className="tiny pixel"
                   style={{ color: "var(--c-dark)", marginTop: 6 }}
                 >
-                  JPG OR PNG · CAMERA OPENS ON MOBILE
+                  JPG OR PNG 
                 </p>
                 <input
                   type="file"
