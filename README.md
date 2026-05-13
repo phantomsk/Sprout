@@ -116,7 +116,7 @@ Gemini powers two distinct intelligent features:
 - **Apple Sign-In** — one-tap auth for iPhone users; reduces friction for mobile-first Gen-Z users
 - **Google / Gmail Sign-In** — OAuth via Supabase's built-in Google provider; leverages existing `.edu` accounts common at universities
 
-### Pixel Art System
+### Pixel Art System 
 Sprout's visual identity is built on a custom pixel sprite engine:
 - Plant sprites are defined as 2D character arrays mapped to CSS color variables
 - Growth stages (seed → sprout → bud → bloom → tree) are distinct sprite definitions
